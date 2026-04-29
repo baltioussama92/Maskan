@@ -2,12 +2,16 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { MapPin, Calendar, Users, Search, ChevronDown, Plus, Minus } from 'lucide-react'
 import { propertyService } from '../../services/propertyService'
+import ReactDatePicker, { registerLocale } from 'react-datepicker'
+import fr from 'date-fns/locale/fr'
+import 'react-datepicker/dist/react-datepicker.css'
 
 // ── Date formatter helper ────────────────────────────────────
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : null
 
 const panelClass = 'absolute top-full mt-3 left-0 right-0 md:right-auto md:w-72 rounded-2xl border border-primary-200/50 bg-primary-50/85 shadow-glass-lg backdrop-blur-xl z-[120]'
+const panelTallClass = `${panelClass} p-4 max-h-72 overflow-y-auto`
 const inputClass = 'w-full rounded-xl border border-primary-200 bg-primary-100 px-4 py-3 text-sm text-primary-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-200'
 
 // ── Pill Divider ─────────────────────────────────────────────
@@ -21,7 +25,7 @@ function SearchField({ label, value, placeholder, icon: Icon, onClick, active, c
     <button
       type="button"
       onClick={onClick}
-      className={`flex flex-col items-start px-5 py-3 rounded-full transition-all duration-200 w-full
+      className={`flex flex-col items-start px-5 ${active ? 'py-4' : 'py-3'} rounded-full transition-all duration-200 w-full
                   md:w-auto group ${active ? 'bg-primary-100 shadow-lg' : 'hover:bg-primary-50/60'}
                   ${className}`}
     >
@@ -48,7 +52,7 @@ function LocationDropdown({ value, onChange, onClose, cities }) {
       animate={{ opacity: 1, y: 0,  scale: 1     }}
       exit  ={{ opacity: 0, y: 10, scale: 0.97   }}
       transition={{ duration: 0.18 }}
-      className={`${panelClass} left-0 overflow-hidden`}
+      className={`${panelTallClass} left-0 md:w-96`}
     >
       <div className="p-3 border-b border-primary-200">
         <input
@@ -82,22 +86,32 @@ function LocationDropdown({ value, onChange, onClose, cities }) {
 
 // ── Date Picker Dropdown (simplified) ───────────────────────
 function DateDropdown({ label, value, onChange, onClose, min }) {
+  // register french locale for react-datepicker
+  registerLocale('fr', fr)
+
+  const selectedDate = value ? new Date(value) : null
+  const minDate = min ? new Date(min) : new Date()
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.97 }}
       animate={{ opacity: 1, y: 0,  scale: 1     }}
       exit  ={{ opacity: 0, y: 10, scale: 0.97   }}
       transition={{ duration: 0.18 }}
-      className={`${panelClass} left-0 p-4`}
+      className={`${panelTallClass} left-0`}
     >
       <p className="text-xs font-bold uppercase tracking-wider text-primary-500 mb-3">{label}</p>
-      <input
-        type="date"
-        value={value || ''}
-        min={min || new Date().toISOString().split('T')[0]}
-        onChange={(e) => { onChange(e.target.value); onClose() }}
-        className={inputClass}
-      />
+      <div className="px-1">
+        <ReactDatePicker
+          inline
+          selected={selectedDate}
+          onChange={(d) => { onChange(d ? d.toISOString().split('T')[0] : ''); onClose() }}
+          minDate={minDate}
+          monthsShown={1}
+          locale="fr"
+          calendarClassName="rounded-2xl border border-primary-200 bg-primary-50/90 p-2"
+        />
+      </div>
     </motion.div>
   )
 }
@@ -143,7 +157,7 @@ function GuestsDropdown({ adults, setAdults, children, setChildren, onClose }) {
       animate={{ opacity: 1, y: 0,  scale: 1     }}
       exit  ={{ opacity: 0, y: 10, scale: 0.97   }}
       transition={{ duration: 0.18 }}
-      className={`${panelClass} md:left-auto md:right-0 p-4`}
+      className={`${panelTallClass} md:left-auto md:right-0`}
     >
       <Counter
         label="Adultes" hint="13 ans et plus"
@@ -190,6 +204,8 @@ export default function SearchBar({ onSearch, className = '' }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  const expanded = openPanel !== null
+
   useEffect(() => {
     let active = true
     propertyService.list()
@@ -224,8 +240,8 @@ export default function SearchBar({ onSearch, className = '' }) {
       ref={barRef}
       onSubmit={handleSubmit}
       className={`relative z-[110] flex flex-col md:flex-row items-stretch md:items-center
-          rounded-3xl md:rounded-full border border-primary-200/50 bg-primary-50/75 shadow-glass-lg backdrop-blur-xl p-1.5 gap-1 w-full max-w-3xl
-                  ${className}`}
+          rounded-3xl md:rounded-full border border-primary-200/50 bg-primary-50/75 shadow-glass-lg backdrop-blur-xl p-1.5 gap-1 w-full
+          transition-all duration-200 ease-out ${expanded ? 'max-w-5xl md:scale-105' : 'max-w-3xl'} ${className}`}
     >
       {/* Location */}
       <div className="relative flex-1">

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link, Navigate, useLocation, useNavigate,
 import { AnimatePresence } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 import Layout         from './layout/Layout'
+import Watermark      from './components/Watermark'
 import HomePage       from './pages/HomePage'
 import DashboardPage  from './pages/DashboardPage'
 import AuthModal      from './components/auth/AuthModal'
@@ -376,6 +377,7 @@ export default function App() {
     <AppErrorBoundary>
       <>
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <Watermark />
           <AppRoutes />
         </BrowserRouter>
 
