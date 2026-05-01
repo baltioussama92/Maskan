@@ -195,7 +195,7 @@ export default function SearchBar({ onSearch, className = '' }) {
     propertyService.list()
       .then((data) => {
         if (!active) return
-        const uniqueCities = Array.from(new Set(data.map((property) => property.location).filter(Boolean)))
+        const uniqueCities = Array.from(new Set((data.content || []).map((property) => property.location).filter(Boolean)))
         setCities(uniqueCities)
       })
       .catch(() => {

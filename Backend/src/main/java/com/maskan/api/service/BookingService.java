@@ -7,6 +7,9 @@ import com.maskan.api.dto.CheckInVerificationResponse;
 import com.maskan.api.dto.VerifyCheckInRequest;
 import com.maskan.api.dto.UnavailableDateRangeResponse;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 
 public interface BookingService {
@@ -14,9 +17,9 @@ public interface BookingService {
     BookingResponse updateStatus(String bookingId, BookingStatusUpdateRequest request, String email);
     void cancelBooking(String bookingId, String email);
     CheckInVerificationResponse verifyCheckIn(String bookingId, VerifyCheckInRequest request, String email);
-    List<BookingResponse> getMyBookings(String email);
-    List<BookingResponse> getOwnerBookings(String email);
-    List<BookingResponse> getAllBookings();
+    Page<BookingResponse> getMyBookings(String email, Pageable pageable);
+    Page<BookingResponse> getOwnerBookings(String email, Pageable pageable);
+    Page<BookingResponse> getAllBookings(Pageable pageable);
     List<UnavailableDateRangeResponse> getUnavailableDateRangesForListing(String listingId);
 }
 

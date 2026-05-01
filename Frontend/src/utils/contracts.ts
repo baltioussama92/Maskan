@@ -121,6 +121,18 @@ export interface PropertyQuery {
   minPrice?: number | string
   maxPrice?: number | string
   available?: boolean
+  type?: string
+  page?: number
+  size?: number
+  sort?: string
+}
+
+export interface PageResponse<T> {
+  content: T[]
+  totalElements: number
+  totalPages: number
+  number: number
+  size: number
 }
 
 // ── Bookings ─────────────────────────────────────────────────
@@ -148,11 +160,17 @@ export interface BookingResponse {
   checkOutDate: string
   status: BookingStatus
   guests?: number
+  guestCount?: number
   totalPrice?: number
   createdAt?: string
   listingTitle?: string
   listingLocation?: string
   listingImage?: string
+  property?: {
+    title?: string
+    image?: string
+    location?: string
+  }
   guestEmail?: string
   guestName?: string
   stripePaymentIntentId?: string

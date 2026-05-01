@@ -111,7 +111,7 @@ export default function BookingsPage({ user }) {
       try {
         const listings = await propertyService.list()
         propertyIndex = new Map(
-          listings.map((property) => [String(property.id), {
+          (listings.content || []).map((property) => [String(property.id), {
             ...property,
             price: property.price ?? property.pricePerNight,
             image: property.image ?? (property.images?.length ? property.images[0] : null),
@@ -121,7 +121,7 @@ export default function BookingsPage({ user }) {
         propertyIndex = new Map()
       }
 
-      const enriched = await Promise.all(data.map(async (b) => {
+      const enriched = await Promise.all((data.content || []).map(async (b) => {
         let property = propertyIndex.get(String(b.listingId))
         if (!property) {
           try {
@@ -139,12 +139,12 @@ export default function BookingsPage({ user }) {
           propertyId: b.listingId,
           checkIn: b.checkInDate,
           checkOut: b.checkOutDate,
-          guests: b.guests ?? 1,
+          guests: b.guests ?? b.guestCount ?? 1,
           totalPrice: Number(b.totalPrice ?? (property?.price ?? 0) * nights),
           status: (b.status || '').toLowerCase(),
           createdAt: b.createdAt || b.checkInDate,
           checkInSecretCode: b.checkInSecretCode || '',
-          property: property || { title: 'Propriété', location: 'Non disponible', image: '' },
+          property: property || b.property || { title: 'Propriété', location: 'Non disponible', image: '' },
         }
       }))
       setAllBookings(enriched)

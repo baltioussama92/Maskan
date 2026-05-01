@@ -18,11 +18,13 @@ public class BookingResponse {
     String listingId;
     String guestId;
     Integer guests;
+    Integer guestCount;
     BigDecimal totalPrice;
     Instant createdAt;
     String listingTitle;
     String listingLocation;
     String listingImage;
+    BookingPropertyInfo property;
     String guestEmail;
     String guestName;
     String stripePaymentIntentId;

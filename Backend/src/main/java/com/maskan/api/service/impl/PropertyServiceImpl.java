@@ -12,6 +12,9 @@ import com.maskan.api.repository.PropertyRepository;
 import com.maskan.api.repository.UserRepository;
 import com.maskan.api.service.PropertyService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -107,19 +110,17 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PropertyResponse> findAll() {
-        return propertyRepository.findAll().stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<PropertyResponse> findAll(Pageable pageable) {
+        return propertyRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<PropertyResponse> findMine(String email) {
+    public Page<PropertyResponse> findMine(String email, Pageable pageable) {
         User owner = getUserByEmail(email);
-        return propertyRepository.findByHostId(owner.getId()).stream()
-                .map(this::toResponse)
-                .toList();
+        return propertyRepository.findByHostId(owner.getId(), pageable)
+                .map(this::toResponse);
     }
 
     @Override
@@ -132,7 +133,7 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PropertyResponse> search(String location,
+    public Page<PropertyResponse> search(String location,
                                          BigDecimal minPrice,
                                          BigDecimal maxPrice,
                                          Boolean available,
@@ -140,7 +141,8 @@ public class PropertyServiceImpl implements PropertyService {
                                          LocalDate checkOutDate,
                                          String type,
                                          Integer bedrooms,
-                                         List<String> amenities) {
+                                         List<String> amenities,
+                                         Pageable pageable) {
         List<Criteria> criteriaList = new ArrayList<>();
 
         if (location != null && !location.isBlank()) {
@@ -197,11 +199,16 @@ public class PropertyServiceImpl implements PropertyService {
         if (!criteriaList.isEmpty()) {
             query.addCriteria(new Criteria().andOperator(criteriaList.toArray(new Criteria[0])));
         }
+        Pageable effectivePageable = pageable == null ? Pageable.unpaged() : pageable;
+        query.with(effectivePageable);
 
-        return mongoTemplate.find(query, Property.class)
-                .stream()
+        List<Property> results = mongoTemplate.find(query, Property.class);
+        long total = mongoTemplate.count(Query.of(query).limit(-1).skip(-1), Property.class);
+        List<PropertyResponse> responses = results.stream()
                 .map(this::toResponse)
                 .toList();
+
+        return new PageImpl<>(responses, effectivePageable, total);
     }
 
     @Override

@@ -11,6 +11,7 @@ import com.maskan.api.dto.AdminUserListingResponse;
 import com.maskan.api.dto.AdminUserMessageResponse;
 import com.maskan.api.dto.AdminUserOverviewResponse;
 import com.maskan.api.dto.AdminUserPermissionsResponse;
+import com.maskan.api.dto.BookingPropertyInfo;
 import com.maskan.api.dto.BookingResponse;
 import com.maskan.api.dto.AdminGrowthMetricsResponse;
 import com.maskan.api.dto.HostDemandResponse;
@@ -29,6 +30,8 @@ import com.maskan.api.repository.MessageRepository;
 import com.maskan.api.repository.UserRepository;
 import com.maskan.api.service.AdminService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -85,18 +88,16 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookingResponse> listBookings() {
-        return bookingRepository.findAll().stream()
-                .map(this::toBookingResponse)
-                .toList();
+    public Page<BookingResponse> listBookings(Pageable pageable) {
+        return bookingRepository.findAll(pageable)
+                .map(this::toBookingResponse);
     }
 
         @Override
         @Transactional(readOnly = true)
-        public List<PropertyResponse> listPendingListings() {
-        return propertyRepository.findByPendingApprovalTrue().stream()
-            .map(this::toPropertyResponse)
-            .toList();
+        public Page<PropertyResponse> listPendingListings(Pageable pageable) {
+        return propertyRepository.findByPendingApprovalTrue(pageable)
+            .map(this::toPropertyResponse);
         }
 
         @Override
@@ -591,6 +592,12 @@ public class AdminServiceImpl implements AdminService {
                 .multiply(BigDecimal.valueOf(guests));
         }
 
+        BookingPropertyInfo propertyInfo = listing == null ? null : BookingPropertyInfo.builder()
+            .title(listing.getTitle())
+            .location(listing.getLocation())
+            .image(listing.getImages() != null && !listing.getImages().isEmpty() ? listing.getImages().get(0) : null)
+            .build();
+
         return BookingResponse.builder()
                 .id(booking.getId())
                 .checkInDate(booking.getCheckInDate())
@@ -599,11 +606,13 @@ public class AdminServiceImpl implements AdminService {
                 .listingId(booking.getListingId())
                 .guestId(booking.getGuestId())
             .guests(booking.getGuests())
+            .guestCount(booking.getGuests())
             .totalPrice(totalPrice)
             .createdAt(booking.getCreatedAt())
             .listingTitle(listing != null ? listing.getTitle() : null)
             .listingLocation(listing != null ? listing.getLocation() : null)
             .listingImage(listing != null && listing.getImages() != null && !listing.getImages().isEmpty() ? listing.getImages().get(0) : null)
+            .property(propertyInfo)
                 .build();
     }
 
@@ -742,12 +751,16 @@ public class AdminServiceImpl implements AdminService {
         return UserDto.builder()
                 .id(user.getId())
                 .fullName(user.getName())
+                .username(user.getUsername())
                 .email(user.getEmail())
                 .role(user.getRole())
                 .createdAt(user.getCreatedAt())
                 .isVerified(user.getIsVerified())
                 .banned(user.getBanned())
                 .avatar(user.getAvatar())
+                .phone(user.getPhone())
+                .bio(user.getBio())
+                .city(user.getCity())
                 .emailVerified(user.getEmailVerified())
                 .phoneVerified(user.getPhoneVerified())
                 .identityStatus(user.getIdentityStatus())

@@ -48,6 +48,14 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/me/password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> updateMyPasswordPut(@AuthenticationPrincipal UserDetails principal,
+                                                    @Valid @RequestBody UpdateMyPasswordRequest request) {
+        userService.updateMyPassword(principal.getUsername(), request);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/search")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<java.util.List<UserDto>> searchUsers(@AuthenticationPrincipal UserDetails principal,

@@ -281,9 +281,10 @@ export default function ProfilePage({ user, onUserUpdate }) {
     }
 
     const loadGuestData = async () => {
-      const [bookings, savedWishlist] = await Promise.all([bookingService.getMine(), wishlistService.list()])
+      const [bookingsPage, savedWishlist] = await Promise.all([bookingService.getMine(), wishlistService.list()])
       if (!active) return
 
+      const bookings = bookingsPage.content || []
       setGuestBookings(bookings.map(mapGuestBooking))
       setWishlist(savedWishlist.map((property) => ({
         id: property.id,
@@ -311,8 +312,11 @@ export default function ProfilePage({ user, onUserUpdate }) {
     }
 
     const loadHostData = async () => {
-      const [listings, ownerBookings] = await Promise.all([propertyService.listMine(), bookingService.getOwnerBookings()])
+      const [listingsPage, ownerBookingsPage] = await Promise.all([propertyService.listMine(), bookingService.getOwnerBookings()])
       if (!active) return
+
+      const listings = listingsPage.content || []
+      const ownerBookings = ownerBookingsPage.content || []
 
       setHostListings(listings.map((listing) => ({
         id: listing.id,

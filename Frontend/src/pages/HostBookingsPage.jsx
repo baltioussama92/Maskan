@@ -55,7 +55,7 @@ export default function HostBookingsPage({ user }) {
       try {
         const listings = await propertyService.list()
         propertyIndex = new Map(
-          listings.map((property) => [String(property.id), {
+          (listings.content || []).map((property) => [String(property.id), {
             ...property,
             price: property.price ?? property.pricePerNight,
             image: property.image ?? (property.images?.length ? property.images[0] : null),
@@ -65,7 +65,7 @@ export default function HostBookingsPage({ user }) {
         propertyIndex = new Map()
       }
 
-      const enriched = await Promise.all(data.map(async (b) => {
+      const enriched = await Promise.all((data.content || []).map(async (b) => {
         let prop = propertyIndex.get(String(b.listingId))
         if (!prop) {
           try {
@@ -77,9 +77,9 @@ export default function HostBookingsPage({ user }) {
         return {
           id: b.id,
           propertyId: b.listingId,
-          propertyTitle: b.listingTitle || prop?.title || 'Propriété',
-          propertyImage: b.listingImage || prop?.image || '',
-          location: b.listingLocation || prop?.location || '',
+          propertyTitle: b.listingTitle || b.property?.title || prop?.title || 'Propriété',
+          propertyImage: b.listingImage || b.property?.image || prop?.image || '',
+          location: b.listingLocation || b.property?.location || prop?.location || '',
           tenant: { 
             name: b.guestName || `Locataire #${b.guestId}`, 
             avatar: `https://i.pravatar.cc/40?u=${b.guestId}`, 
@@ -88,7 +88,7 @@ export default function HostBookingsPage({ user }) {
           },
           checkIn: b.checkInDate,
           checkOut: b.checkOutDate,
-          guests: b.guests ?? 1,
+          guests: b.guests ?? b.guestCount ?? 1,
           totalPrice: Number(b.totalPrice ?? (prop?.price || 0) * nights),
           status: (b.status || '').toLowerCase(),
           createdAt: b.createdAt || b.checkInDate,

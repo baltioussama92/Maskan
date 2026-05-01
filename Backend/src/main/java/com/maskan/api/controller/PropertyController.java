@@ -5,6 +5,9 @@ import com.maskan.api.dto.PropertyResponse;
 import com.maskan.api.service.PropertyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -36,25 +39,27 @@ public class PropertyController {
     private final PropertyService propertyService;
 
     @GetMapping
-    public ResponseEntity<List<PropertyResponse>> getProperties() {
-        List<PropertyResponse> listings = propertyService.findAll();
+    public ResponseEntity<Page<PropertyResponse>> getProperties(@PageableDefault(size = 20) Pageable pageable) {
+        Page<PropertyResponse> listings = propertyService.findAll(pageable);
         return ResponseEntity.ok(listings);
     }
 
     @GetMapping("/owner/me")
     @PreAuthorize("hasAnyRole('HOST','PROPRIETOR','ADMIN')")
-    public ResponseEntity<List<PropertyResponse>> getMyProperties(@AuthenticationPrincipal UserDetails authenticatedUser) {
-        return ResponseEntity.ok(propertyService.findMine(authenticatedUser.getUsername()));
+    public ResponseEntity<Page<PropertyResponse>> getMyProperties(@AuthenticationPrincipal UserDetails authenticatedUser,
+                                                                  @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(propertyService.findMine(authenticatedUser.getUsername(), pageable));
     }
 
     @GetMapping("/mine")
     @PreAuthorize("hasAnyRole('HOST','PROPRIETOR','ADMIN')")
-    public ResponseEntity<List<PropertyResponse>> getMyPropertiesAlias(@AuthenticationPrincipal UserDetails authenticatedUser) {
-        return ResponseEntity.ok(propertyService.findMine(authenticatedUser.getUsername()));
+    public ResponseEntity<Page<PropertyResponse>> getMyPropertiesAlias(@AuthenticationPrincipal UserDetails authenticatedUser,
+                                                                       @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(propertyService.findMine(authenticatedUser.getUsername(), pageable));
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<PropertyResponse>> searchProperties(
+        public ResponseEntity<Page<PropertyResponse>> searchProperties(
             @RequestParam(required = false) String location,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
@@ -63,8 +68,9 @@ public class PropertyController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOutDate,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) Integer bedrooms,
-            @RequestParam(required = false) List<String> amenities) {
-        List<PropertyResponse> listings = propertyService.search(
+            @RequestParam(required = false) List<String> amenities,
+            @PageableDefault(size = 20) Pageable pageable) {
+        Page<PropertyResponse> listings = propertyService.search(
                 location,
                 minPrice,
                 maxPrice,
@@ -73,13 +79,14 @@ public class PropertyController {
                 checkOutDate,
                 type,
                 bedrooms,
-                amenities
+            amenities,
+            pageable
         );
         return ResponseEntity.ok(listings);
     }
 
     @GetMapping("/search/advanced")
-    public ResponseEntity<List<PropertyResponse>> advancedSearchProperties(
+        public ResponseEntity<Page<PropertyResponse>> advancedSearchProperties(
             @RequestParam(required = false) String location,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
@@ -88,8 +95,9 @@ public class PropertyController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOutDate,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) Integer bedrooms,
-            @RequestParam(required = false) List<String> amenities) {
-        List<PropertyResponse> listings = propertyService.search(
+            @RequestParam(required = false) List<String> amenities,
+            @PageableDefault(size = 20) Pageable pageable) {
+        Page<PropertyResponse> listings = propertyService.search(
                 location,
                 minPrice,
                 maxPrice,
@@ -98,7 +106,8 @@ public class PropertyController {
                 checkOutDate,
                 type,
                 bedrooms,
-                amenities
+            amenities,
+            pageable
         );
         return ResponseEntity.ok(listings);
     }

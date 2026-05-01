@@ -102,7 +102,7 @@ export default function MessagesPage({ user }) {
     const ownerBookings = await bookingService.getOwnerBookings()
     const guests = new Map()
 
-    ownerBookings.forEach((booking) => {
+    (ownerBookings.content || []).forEach((booking) => {
       const guestId = booking?.guestId
       if (!guestId) return
       const key = String(guestId)

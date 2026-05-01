@@ -47,7 +47,7 @@ public class AuthServiceImpl implements AuthService {
                 boolean verifiedByDefault = role == Role.GUEST;
 
         User user = User.builder()
-                                .name(request.getName())
+                                .name(request.getFullName())
                                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))

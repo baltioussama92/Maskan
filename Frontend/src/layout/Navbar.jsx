@@ -3,9 +3,9 @@ import { Link, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Home, Compass, Heart, MessageSquare,
-  ChevronDown, LogOut, Settings, User, Building2, Menu, X,
+  Bell, ChevronDown, LogOut, Settings, User, Building2, Menu, X,
   Plus, CalendarCheck,
-  Globe, Bell,
+  Globe,
 } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import NotificationBell from '../components/NotificationBell'

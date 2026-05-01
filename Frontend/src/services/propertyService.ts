@@ -1,10 +1,10 @@
 import { apiClient } from '../api/apiClient'
 import { ENDPOINTS } from '../api/endpoints'
 import { buildQueryString } from '../api/query'
-import type { PropertyQuery, PropertyRequest, PropertyResponse } from '../utils/contracts'
+import type { PageResponse, PropertyQuery, PropertyRequest, PropertyResponse } from '../utils/contracts'
 
 export const propertyService = {
-  async list(query: PropertyQuery = {}): Promise<PropertyResponse[]> {
+  async list(query: PropertyQuery = {}): Promise<PageResponse<PropertyResponse>> {
     const hasSearchFilters =
       query.location != null && query.location !== '' ||
       query.minPrice != null ||
@@ -13,12 +13,13 @@ export const propertyService = {
 
     const queryString = buildQueryString(query as Record<string, unknown>)
     const endpoint = hasSearchFilters ? ENDPOINTS.properties.search : ENDPOINTS.properties.list
-    const { data } = await apiClient.get<PropertyResponse[]>(`${endpoint}${queryString}`)
+    const { data } = await apiClient.get<PageResponse<PropertyResponse>>(`${endpoint}${queryString}`)
     return data
   },
 
-  async listMine(): Promise<PropertyResponse[]> {
-    const { data } = await apiClient.get<PropertyResponse[]>(ENDPOINTS.properties.mine)
+  async listMine(query: { page?: number; size?: number; sort?: string } = {}): Promise<PageResponse<PropertyResponse>> {
+    const queryString = buildQueryString(query as Record<string, unknown>)
+    const { data } = await apiClient.get<PageResponse<PropertyResponse>>(`${ENDPOINTS.properties.mine}${queryString}`)
     return data
   },
 

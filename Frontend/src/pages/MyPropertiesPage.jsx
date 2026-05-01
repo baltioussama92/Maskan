@@ -38,7 +38,7 @@ export default function MyPropertiesPage({ user }) {
     propertyService.listMine()
       .then(data => {
         if (!active) return
-        const mine = data.map(p => ({
+        const mine = (data.content || []).map(p => ({
           ...p,
           price: p.price ?? p.pricePerNight,
           image: p.image ?? (p.images?.length ? p.images[0] : null),

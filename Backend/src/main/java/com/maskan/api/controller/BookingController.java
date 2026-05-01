@@ -9,6 +9,9 @@ import com.maskan.api.dto.VerifyCheckInRequest;
 import com.maskan.api.service.BookingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -66,14 +69,16 @@ public class BookingController {
 
     @GetMapping("/me")
     @PreAuthorize("hasAnyRole('GUEST','TENANT')")
-    public ResponseEntity<List<BookingResponse>> myBookings(@AuthenticationPrincipal UserDetails principal) {
-        return ResponseEntity.ok(bookingService.getMyBookings(principal.getUsername()));
+    public ResponseEntity<Page<BookingResponse>> myBookings(@AuthenticationPrincipal UserDetails principal,
+                                                            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(bookingService.getMyBookings(principal.getUsername(), pageable));
     }
 
     @GetMapping("/owner")
     @PreAuthorize("hasAnyRole('HOST','PROPRIETOR','ADMIN')")
-    public ResponseEntity<List<BookingResponse>> ownerBookings(@AuthenticationPrincipal UserDetails principal) {
-        return ResponseEntity.ok(bookingService.getOwnerBookings(principal.getUsername()));
+    public ResponseEntity<Page<BookingResponse>> ownerBookings(@AuthenticationPrincipal UserDetails principal,
+                                                               @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(bookingService.getOwnerBookings(principal.getUsername(), pageable));
     }
 
     @GetMapping("/listing/{listingId}/unavailable-dates")

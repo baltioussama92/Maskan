@@ -2,6 +2,8 @@ package com.maskan.api.repository;
 
 import com.maskan.api.entity.Booking;
 import com.maskan.api.entity.BookingStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.time.LocalDate;
@@ -10,7 +12,9 @@ import java.util.List;
 
 public interface BookingRepository extends MongoRepository<Booking, String> {
 	List<Booking> findByGuestId(String guestId);
+	Page<Booking> findByGuestId(String guestId, Pageable pageable);
 	List<Booking> findByListingIdIn(List<String> listingIds);
+	Page<Booking> findByListingIdIn(List<String> listingIds, Pageable pageable);
 	List<Booking> findByListingIdAndStatusIn(String listingId, List<BookingStatus> statuses);
 	List<Booking> findByListingIdAndStatusInAndCheckInDateLessThanAndCheckOutDateGreaterThan(
 			String listingId,

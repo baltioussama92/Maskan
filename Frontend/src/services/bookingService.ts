@@ -1,10 +1,12 @@
 import { apiClient } from '../api/apiClient'
 import { ENDPOINTS } from '../api/endpoints'
+import { buildQueryString } from '../api/query'
 import type {
   BookingRequest,
   BookingResponse,
   BookingStatusUpdateRequest,
   CheckInVerificationResponse,
+  PageResponse,
   PaymentCheckoutResponse,
   UnavailableDateRange,
 } from '../utils/contracts'
@@ -15,13 +17,15 @@ export const bookingService = {
     return data
   },
 
-  async getMine(): Promise<BookingResponse[]> {
-    const { data } = await apiClient.get<BookingResponse[]>(ENDPOINTS.bookings.listMine)
+  async getMine(query: { page?: number; size?: number; sort?: string } = {}): Promise<PageResponse<BookingResponse>> {
+    const queryString = buildQueryString(query as Record<string, unknown>)
+    const { data } = await apiClient.get<PageResponse<BookingResponse>>(`${ENDPOINTS.bookings.listMine}${queryString}`)
     return data
   },
 
-  async getOwnerBookings(): Promise<BookingResponse[]> {
-    const { data } = await apiClient.get<BookingResponse[]>(ENDPOINTS.bookings.listOwner)
+  async getOwnerBookings(query: { page?: number; size?: number; sort?: string } = {}): Promise<PageResponse<BookingResponse>> {
+    const queryString = buildQueryString(query as Record<string, unknown>)
+    const { data } = await apiClient.get<PageResponse<BookingResponse>>(`${ENDPOINTS.bookings.listOwner}${queryString}`)
     return data
   },
 

@@ -19,6 +19,9 @@ import com.maskan.api.dto.UserDto;
 import com.maskan.api.service.AdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -59,13 +62,13 @@ public class AdminController {
     }
 
     @GetMapping("/bookings")
-    public ResponseEntity<List<BookingResponse>> bookings() {
-        return ResponseEntity.ok(adminService.listBookings());
+    public ResponseEntity<Page<BookingResponse>> bookings(@PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(adminService.listBookings(pageable));
     }
 
     @GetMapping("/pending-listings")
-    public ResponseEntity<List<PropertyResponse>> pendingListings() {
-        return ResponseEntity.ok(adminService.listPendingListings());
+    public ResponseEntity<Page<PropertyResponse>> pendingListings(@PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(adminService.listPendingListings(pageable));
     }
 
     @PutMapping("/properties/{id}/verify")

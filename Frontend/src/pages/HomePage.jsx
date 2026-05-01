@@ -75,7 +75,7 @@ export default function HomePage({ user = null, onAuthClick = null }) {
     try {
       const query = location ? { location } : {}
       const data = await propertyService.list(query)
-      setSearchResult(data)
+      setSearchResult(data.content || [])
     } catch {
       setSearchResult([])
     }

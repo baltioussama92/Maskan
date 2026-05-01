@@ -50,7 +50,7 @@ export default function PropertyGrid({ title = 'Propriétés en vedette', search
     propertyService.list()
       .then(data => {
         if (!active) return
-        setApiData(data.map(normalizeProperty))
+        setApiData((data.content || []).map(normalizeProperty))
       })
       .catch(() => {})
       .finally(() => { if (active) setLoading(false) })

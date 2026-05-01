@@ -16,14 +16,17 @@ import com.maskan.api.dto.HostDemandResponse;
 import com.maskan.api.dto.PropertyResponse;
 import com.maskan.api.dto.UserDto;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 
 public interface AdminService {
     List<UserDto> listUsers();
     UserDto banUser(String userId);
     UserDto blockUser(String userId);
-    List<BookingResponse> listBookings();
-    List<PropertyResponse> listPendingListings();
+    Page<BookingResponse> listBookings(Pageable pageable);
+    Page<PropertyResponse> listPendingListings(Pageable pageable);
     PropertyResponse verifyProperty(String propertyId);
     AdminGrowthMetricsResponse growthMetrics();
 

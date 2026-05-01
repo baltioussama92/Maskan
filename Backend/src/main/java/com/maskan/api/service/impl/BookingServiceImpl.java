@@ -1,5 +1,6 @@
 package com.maskan.api.service.impl;
 
+import com.maskan.api.dto.BookingPropertyInfo;
 import com.maskan.api.dto.BookingRequest;
 import com.maskan.api.dto.BookingResponse;
 import com.maskan.api.dto.BookingStatusUpdateRequest;
@@ -19,6 +20,8 @@ import com.maskan.api.repository.UserRepository;
 import com.maskan.api.service.BookingService;
 import com.maskan.api.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -182,22 +185,20 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookingResponse> getMyBookings(String email) {
+    public Page<BookingResponse> getMyBookings(String email, Pageable pageable) {
         User user = getUserByEmail(email);
-        return bookingRepository.findByGuestId(user.getId()).stream()
-                .map(booking -> toResponse(booking, true))
-                .toList();
+        return bookingRepository.findByGuestId(user.getId(), pageable)
+                .map(booking -> toResponse(booking, true));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookingResponse> getOwnerBookings(String email) {
+    public Page<BookingResponse> getOwnerBookings(String email, Pageable pageable) {
         User owner = getUserByEmail(email);
 
         if (owner.getRole() == Role.ADMIN) {
-            return bookingRepository.findAll().stream()
-                    .map(booking -> toResponse(booking, false))
-                    .toList();
+            return bookingRepository.findAll(pageable)
+                    .map(booking -> toResponse(booking, false));
         }
 
         if (owner.getRole() != Role.HOST) {
@@ -209,20 +210,18 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toList());
 
         if (ownerPropertyIds.isEmpty()) {
-            return List.of();
+            return Page.empty(pageable);
         }
 
-        return bookingRepository.findByListingIdIn(ownerPropertyIds).stream()
-            .map(booking -> toResponse(booking, false))
-                .toList();
+        return bookingRepository.findByListingIdIn(ownerPropertyIds, pageable)
+            .map(booking -> toResponse(booking, false));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookingResponse> getAllBookings() {
-        return bookingRepository.findAll().stream()
-                .map(booking -> toResponse(booking, false))
-                .toList();
+    public Page<BookingResponse> getAllBookings(Pageable pageable) {
+        return bookingRepository.findAll(pageable)
+                .map(booking -> toResponse(booking, false));
     }
 
     @Override
@@ -259,6 +258,12 @@ public class BookingServiceImpl implements BookingService {
         // Fetch guest info
         User guest = userRepository.findById(booking.getGuestId()).orElse(null);
 
+        BookingPropertyInfo propertyInfo = listing == null ? null : BookingPropertyInfo.builder()
+            .title(listing.getTitle())
+            .location(listing.getLocation())
+            .image(listing.getImages() != null && !listing.getImages().isEmpty() ? listing.getImages().get(0) : null)
+            .build();
+
         return BookingResponse.builder()
                 .id(booking.getId())
                 .checkInDate(booking.getCheckInDate())
@@ -267,11 +272,13 @@ public class BookingServiceImpl implements BookingService {
                 .listingId(booking.getListingId())
                 .guestId(booking.getGuestId())
             .guests(booking.getGuests())
+            .guestCount(booking.getGuests())
             .totalPrice(totalPrice)
             .createdAt(booking.getCreatedAt())
             .listingTitle(listing != null ? listing.getTitle() : null)
             .listingLocation(listing != null ? listing.getLocation() : null)
             .listingImage(listing != null && listing.getImages() != null && !listing.getImages().isEmpty() ? listing.getImages().get(0) : null)
+            .property(propertyInfo)
             .guestEmail(guest != null ? guest.getEmail() : null)
             .guestName(guest != null ? guest.getName() : null)
             .stripePaymentIntentId(booking.getStripePaymentIntentId())

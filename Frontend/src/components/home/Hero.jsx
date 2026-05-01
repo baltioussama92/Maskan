@@ -59,17 +59,18 @@ export default function Hero({ onSearch }) {
     propertyService.list()
       .then((data) => {
         if (!active) return
-        const prices = data
+        const items = data.content || []
+        const prices = items
           .map((p) => Number(p.price ?? p.pricePerNight ?? 0))
           .filter((value) => Number.isFinite(value) && value > 0)
         const avgPrice = prices.length
           ? Math.round(prices.reduce((sum, value) => sum + value, 0) / prices.length)
           : 0
-        const cityCount = new Set(data.map((p) => p.location).filter(Boolean)).size
-        const availableCount = data.filter((p) => p.available !== false).length
+        const cityCount = new Set(items.map((p) => p.location).filter(Boolean)).size
+        const availableCount = items.filter((p) => p.available !== false).length
 
         setStats([
-          { label: 'Propriétés listées', value: String(data.length) },
+          { label: 'Propriétés listées', value: String(items.length) },
           { label: 'Villes couvertes', value: String(cityCount) },
           { label: 'Disponibles', value: String(availableCount) },
           { label: 'Prix moyen', value: `${avgPrice.toLocaleString('fr-TN')} DT` },
@@ -77,7 +78,7 @@ export default function Hero({ onSearch }) {
 
         // Get popular cities (top 5 by property count)
         const cityCounts = {}
-        data.forEach((p) => {
+        items.forEach((p) => {
           if (p.location) {
             cityCounts[p.location] = (cityCounts[p.location] || 0) + 1
           }

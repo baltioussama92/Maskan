@@ -1,6 +1,6 @@
 ﻿import { API_BASE_URL, apiClient, getStoredAuthToken } from '../../api/apiClient'
 import { ENDPOINTS } from '../../api/endpoints'
-import type { BookingResponse, MessageResponse, PropertyResponse, UserDto } from '../../utils/contracts'
+import type { BookingResponse, MessageResponse, PageResponse, PropertyResponse, UserDto } from '../../utils/contracts'
 
 export type UserRole = 'guest' | 'host'
 export type UserStatus = 'active' | 'banned'
@@ -461,13 +461,13 @@ const toPayments = (bookings: BookingResponse[]): AdminPayment[] => (
 )
 
 async function fetchAdminBookings(): Promise<BookingResponse[]> {
-  const { data } = await apiClient.get<BookingResponse[]>(ENDPOINTS.admin.bookings)
-  return data
+  const { data } = await apiClient.get<PageResponse<BookingResponse>>(ENDPOINTS.admin.bookings)
+  return data.content || []
 }
 
 async function fetchPendingListings(): Promise<PropertyResponse[]> {
-  const { data } = await apiClient.get<PropertyResponse[]>(ENDPOINTS.admin.pendingListings)
-  return data
+  const { data } = await apiClient.get<PageResponse<PropertyResponse>>(ENDPOINTS.admin.pendingListings)
+  return data.content || []
 }
 
 async function uploadPropertyImage(file: File): Promise<string> {
@@ -535,12 +535,12 @@ export const adminApi = {
 
   async getListings(): Promise<AdminListing[]> {
     const [allListingsResponse, pendingListings] = await Promise.all([
-      apiClient.get<PropertyResponse[]>(ENDPOINTS.properties.list),
+      apiClient.get<PageResponse<PropertyResponse>>(ENDPOINTS.properties.list),
       fetchPendingListings(),
     ])
 
     const pendingIds = new Set(pendingListings.map((entry) => toNumberId(entry.id)))
-    const merged = [...allListingsResponse.data, ...pendingListings]
+    const merged = [...(allListingsResponse.data.content || []), ...pendingListings]
     const uniqById = new Map<number, PropertyResponse>()
 
     merged.forEach((entry) => {
