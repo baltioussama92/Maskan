@@ -44,6 +44,8 @@ export default function PropertyGrid({ title = 'Propriétés en vedette', search
   const [apiData, setApiData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [favoriteIds, setFavoriteIds] = useState(() => new Set())
+  const [displayCount, setDisplayCount] = useState(12) // Show 12 properties initially
+  const itemsPerPage = 12
 
   useEffect(() => {
     let active = true
@@ -234,7 +236,7 @@ export default function PropertyGrid({ title = 'Propriétés en vedette', search
               : 'grid-cols-1 max-w-2xl'
           }`}
         >
-          {sorted.map((property, i) => {
+          {sorted.slice(0, displayCount).map((property, i) => {
             const revealDelay = i === 0 ? 0.1 : i === 1 ? 0.2 : i === 2 ? 0.3 : 0.35
 
             return (
@@ -252,15 +254,18 @@ export default function PropertyGrid({ title = 'Propriétés en vedette', search
       )}
 
       {/* -- Load More --------------------------------------- */}
-      <div className="flex justify-center mt-12">
-        <motion.button
-          whileHover={{ scale: 1.04, boxShadow: '0 8px 24px rgba(164,131,116,0.25)' }}
-          whileTap={{ scale: 0.97 }}
-          className="inline-flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-100 px-5 py-3 text-sm font-semibold text-primary-700 shadow-sm transition hover:border-primary-300 hover:bg-primary-50"
-        >
-          Voir plus de propriétés
-        </motion.button>
-      </div>
+      {!loading && sorted.length > displayCount && (
+        <div className="flex justify-center mt-12">
+          <motion.button
+            whileHover={{ scale: 1.04, boxShadow: '0 8px 24px rgba(164,131,116,0.25)' }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setDisplayCount(prev => prev + itemsPerPage)}
+            className="inline-flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-100 px-5 py-3 text-sm font-semibold text-primary-700 shadow-sm transition hover:border-primary-300 hover:bg-primary-50"
+          >
+            Voir plus de propriétés
+          </motion.button>
+        </div>
+      )}
     </section>
   )
 }

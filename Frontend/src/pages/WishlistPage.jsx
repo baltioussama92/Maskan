@@ -3,7 +3,7 @@ import { Navigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Heart, Trash2, MapPin, Star, Bed, Bath, Maximize2,
-  Search, SlidersHorizontal, X,
+  Search, SlidersHorizontal, X, Loader2,
 } from 'lucide-react'
 import { wishlistService } from '../services/wishlistService'
 
@@ -20,6 +20,7 @@ export default function WishlistPage({ user }) {
   const [sort,   setSort]   = useState('date')
   const [search, setSearch] = useState('')
   const [removing, setRemoving] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [items, setItems] = useState([])
 
   useEffect(() => {
@@ -38,6 +39,9 @@ export default function WishlistPage({ user }) {
       .catch(() => {
         if (!active) return
         setItems([])
+      })
+      .finally(() => {
+        if (active) setLoading(false)
       })
 
     return () => {
@@ -145,7 +149,12 @@ export default function WishlistPage({ user }) {
         </motion.div>
 
         {/* ── Empty state ───────────────────────────────────── */}
-        {filteredItems.length === 0 && (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-24">
+            <Loader2 className="w-8 h-8 text-primary-400 animate-spin" />
+            <p className="mt-4 text-sm text-primary-500">Chargement de vos favoris...</p>
+          </div>
+        ) : filteredItems.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -171,11 +180,9 @@ export default function WishlistPage({ user }) {
               </Link>
             )}
           </motion.div>
-        )}
-
-        {/* ── Grid ──────────────────────────────────────────── */}
-        {filteredItems.length > 0 && (
+        ) : (
           <>
+            {/* ── Grid ──────────────────────────────────────────── */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               <AnimatePresence mode="popLayout">
                 {filteredItems.map((p, i) => (

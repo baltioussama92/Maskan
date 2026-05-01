@@ -1,0 +1,63 @@
+/* ── Watermark Animations ─────────────────────────────────────────── */
+
+@keyframes flicker {
+  0%, 100% {
+    opacity: 0.45;
+  }
+  10% {
+    opacity: 0.55;
+  }
+  15% {
+    opacity: 0.40;
+  }
+  20% {
+    opacity: 0.52;
+  }
+  25% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.50;
+  }
+  75% {
+    opacity: 0.48;
+  }
+  85% {
+    opacity: 0.55;
+  }
+  92% {
+    opacity: 0.42;
+  }
+}
+
+@keyframes shine {
+  0% {
+    opacity: 0;
+    transform: translateX(-100%) translateY(-100%);
+  }
+  20% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  80% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(100%) translateY(100%);
+  }
+}
+
+.watermark-animated {
+  animation: flicker 4s ease-in-out infinite;
+}
+
+.watermark-flicker {
+  animation: flicker 4s ease-in-out infinite;
+}
+
+.watermark-shine {
+  animation: shine 3s ease-in-out infinite !important;
+}

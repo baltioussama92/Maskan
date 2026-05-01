@@ -6,7 +6,7 @@ import { ENDPOINTS } from '../api/endpoints'
 import {
   Settings, User, Bell, Shield, Globe, Moon, Sun,
   Eye, EyeOff, Check, Loader2, Trash2, LogOut,
-  ChevronRight, Smartphone, Mail, CreditCard,
+  ChevronRight, Smartphone, Mail, CreditCard, MapPin,
 } from 'lucide-react'
 
 const USER_KEY = 'user'
@@ -68,7 +68,10 @@ export default function SettingsPage({ user, onUserUpdate, onLogout }) {
   const [form, setForm] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    phone: '+216 ',
+    phone: user?.phone || '+216 ',
+    bio: user?.bio || '',
+    city: user?.city || '',
+    avatar: user?.avatar || '',
     language: 'Français',
     currency: 'DT',
   })
@@ -104,6 +107,10 @@ export default function SettingsPage({ user, onUserUpdate, onLogout }) {
       const response = await apiClient.put(ENDPOINTS.users.updateMe, {
         fullName: form.name.trim() || user.name,
         email: form.email.trim() || user.email,
+        phone: form.phone?.trim() || undefined,
+        bio: form.bio?.trim() || undefined,
+        city: form.city?.trim() || undefined,
+        avatar: form.avatar?.trim() || undefined,
       })
 
       const backendUser = response.data || {}
@@ -112,6 +119,10 @@ export default function SettingsPage({ user, onUserUpdate, onLogout }) {
         ...backendUser,
         name: backendUser.fullName || backendUser.name || form.name.trim() || user.name,
         email: backendUser.email || form.email.trim() || user.email,
+        phone: backendUser.phone || form.phone?.trim() || user.phone,
+        bio: backendUser.bio || form.bio?.trim() || user.bio,
+        city: backendUser.city || form.city?.trim() || user.city,
+        avatar: backendUser.avatar || form.avatar?.trim() || user.avatar,
       }
 
       localStorage.setItem(USER_KEY, JSON.stringify(updated))
@@ -251,6 +262,15 @@ export default function SettingsPage({ user, onUserUpdate, onLogout }) {
                           </select>
                         </FormField>
                       </div>
+                      <FormField icon={User} label="Biographie">
+                        <textarea name="bio" value={form.bio} onChange={handleChange} className={inputClass + ' resize-none'} placeholder="Parlez un peu de vous..." rows="3" />
+                      </FormField>
+                      <FormField icon={MapPin} label="Ville">
+                        <input name="city" value={form.city} onChange={handleChange} className={inputClass} placeholder="Votre ville" />
+                      </FormField>
+                      <FormField icon={User} label="URL de l'avatar">
+                        <input name="avatar" value={form.avatar} onChange={handleChange} className={inputClass} placeholder="https://exemple.com/avatar.jpg" />
+                      </FormField>
                     </div>
                     <SaveButton loading={saving} saved={saved === 'profile'} onClick={handleProfileSave} />
                   </Card>
