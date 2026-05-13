@@ -2,7 +2,9 @@ package com.maskan.api.controller;
 
 import com.maskan.api.dto.UpdateUserProfileRequest;
 import com.maskan.api.dto.UpdateMyPasswordRequest;
+import com.maskan.api.dto.UpdateUserPreferencesRequest;
 import com.maskan.api.dto.UserDto;
+import com.maskan.api.dto.UserPreferencesDto;
 import com.maskan.api.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +56,19 @@ public class UserController {
                                                     @Valid @RequestBody UpdateMyPasswordRequest request) {
         userService.updateMyPassword(principal.getUsername(), request);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/me/preferences")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UserPreferencesDto> getMyPreferences(@AuthenticationPrincipal UserDetails principal) {
+        return ResponseEntity.ok(userService.getMyPreferences(principal.getUsername()));
+    }
+
+    @PutMapping("/me/preferences")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UserPreferencesDto> updateMyPreferences(@AuthenticationPrincipal UserDetails principal,
+                                                                  @RequestBody UpdateUserPreferencesRequest request) {
+        return ResponseEntity.ok(userService.updateMyPreferences(principal.getUsername(), request));
     }
 
     @GetMapping("/search")

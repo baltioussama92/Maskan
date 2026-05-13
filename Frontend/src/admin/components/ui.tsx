@@ -40,15 +40,15 @@ export function SurfaceCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className={cx(
-        'rounded-3xl border border-[#E2D3C0] bg-gradient-to-b from-[#FFFFFF] to-[#FFFCF8] p-5 shadow-[0_12px_26px_rgba(52,37,24,0.08)]',
+        'rounded-3xl border border-[#E2D3C0] bg-gradient-to-b from-[#FFFFFF] to-[#FFFCF8] p-5 shadow-[0_12px_26px_rgba(52,37,24,0.08)] dark:border-slate-700 dark:bg-gradient-to-b dark:from-slate-900 dark:to-slate-800 dark:shadow-[0_12px_26px_rgba(2,6,23,0.6)]',
         className,
       )}
     >
       {(title || subtitle || action) && (
         <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            {title && <h3 className="text-lg font-bold tracking-tight text-[#2E231C]">{title}</h3>}
-            {subtitle && <p className="mt-1 text-sm text-[#6B5B4C]">{subtitle}</p>}
+            {title && <h3 className="text-lg font-bold tracking-tight text-[#2E231C] dark:text-slate-100">{title}</h3>}
+            {subtitle && <p className="mt-1 text-sm text-[#6B5B4C] dark:text-slate-300">{subtitle}</p>}
           </div>
           {action}
         </header>
@@ -80,14 +80,14 @@ export function MetricCard({
   }
 
   return (
-    <SurfaceCard className={cx('relative overflow-hidden p-4', `ring-1 ${ringByTone[tone]}`)}>
+    <SurfaceCard className={cx('relative overflow-hidden p-4', `ring-1 ${ringByTone[tone]} dark:ring-slate-700`)}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#7B6959]">{label}</p>
-          <p className="mt-2 text-2xl font-black text-[#2F241D]">{value}</p>
-          {delta ? <p className="mt-1 text-xs text-[#7B6959]">{delta}</p> : null}
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#7B6959] dark:text-slate-400">{label}</p>
+          <p className="mt-2 text-2xl font-black text-[#2F241D] dark:text-slate-100">{value}</p>
+          {delta ? <p className="mt-1 text-xs text-[#7B6959] dark:text-slate-400">{delta}</p> : null}
         </div>
-        {icon ? <div className="rounded-xl border border-[#E3D2BE] bg-[#F8F2EA] p-2.5 text-[#6A5240]">{icon}</div> : null}
+            {icon ? <div className="rounded-xl border border-[#E3D2BE] bg-[#F8F2EA] p-2.5 text-[#6A5240] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">{icon}</div> : null}
       </div>
     </SurfaceCard>
   )
@@ -112,8 +112,8 @@ export function SectionTabs<T extends string>({
           className={cx(
             'rounded-xl border px-3.5 py-2 text-sm font-semibold transition',
             tab.key === value
-              ? 'border-[#2F241D] bg-[#2F241D] text-[#FFFDF8]'
-              : 'border-[#DAC9B4] bg-[#F9F3EA] text-[#5E4C3E] hover:bg-[#EFE4D7]',
+              ? 'border-[#2F241D] bg-[#2F241D] text-[#FFFDF8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100'
+              : 'border-[#DAC9B4] bg-[#F9F3EA] text-[#5E4C3E] hover:bg-[#EFE4D7] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700',
           )}
         >
           {tab.label}
@@ -137,7 +137,7 @@ export function SearchField({
       value={value}
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder || 'Search'}
-      className="w-full rounded-xl border border-[#DCCCB8] bg-[#FFFDFA] px-3.5 py-2.5 text-sm text-[#2F241D] outline-none transition placeholder:text-[#8F7B69] focus:border-[#B99168] focus:ring-2 focus:ring-[#E7D5C2]"
+      className="w-full rounded-xl border border-[#DCCCB8] bg-[#FFFDFA] px-3.5 py-2.5 text-sm text-[#2F241D] outline-none transition placeholder:text-[#8F7B69] focus:border-[#B99168] focus:ring-2 focus:ring-[#E7D5C2] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-slate-600 dark:focus:ring-slate-700"
     />
   )
 }
@@ -155,7 +155,7 @@ export function FilterSelect({
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="rounded-xl border border-[#DCCCB8] bg-[#FFFDFA] px-3 py-2.5 text-sm text-[#2F241D] outline-none transition focus:border-[#B99168] focus:ring-2 focus:ring-[#E7D5C2]"
+      className="rounded-xl border border-[#DCCCB8] bg-[#FFFDFA] px-3 py-2.5 text-sm text-[#2F241D] outline-none transition focus:border-[#B99168] focus:ring-2 focus:ring-[#E7D5C2] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-600 dark:focus:ring-slate-700"
     >
       {options.map((option) => (
         <option key={option.value} value={option.value}>
@@ -168,15 +168,15 @@ export function FilterSelect({
 
 export function EmptyState({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-[#DCCCB8] bg-[#FCF7F0] p-8 text-center">
-      <p className="text-base font-bold text-[#3B2E26]">{title}</p>
-      <p className="mt-1 text-sm text-[#756151]">{body}</p>
+    <div className="rounded-2xl border border-dashed border-[#DCCCB8] bg-[#FCF7F0] p-8 text-center dark:border-slate-700 dark:bg-slate-900">
+      <p className="text-base font-bold text-[#3B2E26] dark:text-slate-100">{title}</p>
+      <p className="mt-1 text-sm text-[#756151] dark:text-slate-400">{body}</p>
     </div>
   )
 }
 
 export function SkeletonBlock({ className = '' }: { className?: string }) {
-  return <div className={cx('animate-pulse rounded-xl bg-[#EFE3D6]', className)} />
+  return <div className={cx('animate-pulse rounded-xl bg-[#EFE3D6] dark:bg-slate-800', className)} />
 }
 
 export function MiniBarChart({

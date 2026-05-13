@@ -5,6 +5,7 @@ import com.maskan.api.entity.BookingStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 
 import java.time.LocalDate;
 import java.util.Collection;
@@ -38,6 +39,8 @@ public interface BookingRepository extends MongoRepository<Booking, String> {
 	long countByGuestIdAndStatus(String guestId, BookingStatus status);
 	long countByStatus(BookingStatus status);
 	boolean existsByGuestIdAndListingIdAndStatus(String guestId, String listingId, BookingStatus status);
+	@Query("{ 'guestId': ?0, 'listingId': ?1, 'status': ?2 }")
+	boolean existsByGuestIdAndPropertyIdAndStatus(String guestId, String propertyId, BookingStatus status);
 	boolean existsByListingIdAndStatus(String listingId, BookingStatus status);
 }
 

@@ -138,13 +138,15 @@ export default function ProfileSettings({ onSettingClick = () => {}, isOpen = tr
         </div>
 
         {/* Support CTA */}
-        <motion.div
+        <motion.button
+          type="button"
           whileHover={{ scale: 1.02 }}
-          className="mt-6 p-4 bg-gradient-to-br from-primary-50 to-primary-100 border border-primary-200 rounded-xl text-center cursor-pointer"
+          onClick={() => onSettingClick('help')}
+          className="mt-6 w-full p-4 bg-gradient-to-br from-primary-50 to-primary-100 border border-primary-200 rounded-xl text-center cursor-pointer"
         >
           <p className="text-sm font-semibold text-primary-900">Need help?</p>
           <p className="text-xs text-primary-700 mt-1">Contact our support team</p>
-        </motion.div>
+        </motion.button>
       </div>
     </motion.aside>
   )

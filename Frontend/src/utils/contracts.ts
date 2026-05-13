@@ -63,6 +63,70 @@ export interface UserDto {
   username?: string
   bio?: string
   avatar?: string
+  preferences?: UserPreferences
+}
+
+export interface NotificationPreferences {
+  bookings: boolean
+  messages: boolean
+  marketing: boolean
+  sms: boolean
+  news: boolean
+}
+
+export interface PrivacyPreferences {
+  showProfile: boolean
+  showActivity: boolean
+  allowMessages: boolean
+}
+
+export interface UserPreferences {
+  language: string
+  currency: string
+  notifications: NotificationPreferences
+  privacy: PrivacyPreferences
+}
+
+export interface UpdateUserPreferencesRequest {
+  language?: string
+  currency?: string
+  notifications?: Partial<NotificationPreferences>
+  privacy?: Partial<PrivacyPreferences>
+}
+
+export interface PaymentMethodRequest {
+  cardholderName: string
+  brand: string
+  last4: string
+  expMonth: number
+  expYear: number
+  isDefault?: boolean
+}
+
+export interface PaymentMethodResponse {
+  id: string
+  cardholderName: string
+  brand: string
+  last4: string
+  expMonth: number
+  expYear: number
+  isDefault: boolean
+  createdAt?: string
+}
+
+export interface SupportTicketRequest {
+  subject: string
+  message: string
+  priority?: string
+}
+
+export interface SupportTicketResponse {
+  id: string
+  subject: string
+  priority: string
+  status: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface AuthResponse {

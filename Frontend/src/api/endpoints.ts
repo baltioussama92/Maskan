@@ -25,7 +25,7 @@ export const ENDPOINTS = {
   reviews: {
     create: '/reviews',
     listByProperty: (propertyId: number | string) => `/reviews/listing/${propertyId}`,
-    canReview: (propertyId: number | string) => `/reviews/can-review/${propertyId}`,
+    canReview: (propertyId: number | string) => `/reviews/eligibility/${propertyId}`,
   },
   messages: {
     send: '/messages',
@@ -43,7 +43,18 @@ export const ENDPOINTS = {
     me: '/users/me',
     updateMe: '/users/me',
     updatePassword: '/users/me/password',
+    preferences: '/users/me/preferences',
     search: (query: string) => `/users/search?q=${encodeURIComponent(query)}`,
+  },
+  paymentMethods: {
+    list: '/payment-methods',
+    create: '/payment-methods',
+    setDefault: (id: number | string) => `/payment-methods/${id}/default`,
+    remove: (id: number | string) => `/payment-methods/${id}`,
+  },
+  support: {
+    create: '/support/tickets',
+    listMine: '/support/tickets/mine',
   },
   wishlist: {
     list: '/wishlist',

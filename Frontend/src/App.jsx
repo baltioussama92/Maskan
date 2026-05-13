@@ -316,8 +316,8 @@ function AppRoutes() {
             <Route path="/"         element={<HomePage user={user} onAuthClick={handleAuthClick} />} />
             <Route path="/explorer" element={<ExplorerPage user={user} onAuthClick={handleAuthClick} />} />
             <Route path="/property/:id" element={<PropertyDetails user={user} onAuthClick={handleAuthClick} />} />
-            <Route path="/profile"  element={user ? <ProfilePage user={user} onUserUpdate={setUser} /> : <Navigate to="/?auth=login" replace />} />
-            <Route path="/account"  element={user ? <ProfilePage user={user} onUserUpdate={setUser} /> : <Navigate to="/?auth=login" replace />} />
+            <Route path="/profile"  element={user ? <ProfilePage user={user} onUserUpdate={setUser} onLogout={handleLogout} /> : <Navigate to="/?auth=login" replace />} />
+            <Route path="/account"  element={user ? <ProfilePage user={user} onUserUpdate={setUser} onLogout={handleLogout} /> : <Navigate to="/?auth=login" replace />} />
             <Route path="/host-verification" element={user ? <Suspense fallback={<LoadingFallback />}><HostVerificationPage user={user} onUserUpdate={setUser} /></Suspense> : <Navigate to="/?auth=login" replace />} />
             <Route path="/guest-verification" element={user ? <Suspense fallback={<LoadingFallback />}><GuestVerificationPage user={user} onUserUpdate={setUser} /></Suspense> : <Navigate to="/?auth=login" replace />} />
             <Route path="/bookings"  element={user ? <BookingsPage user={user} /> : <Navigate to="/?auth=login" replace />} />

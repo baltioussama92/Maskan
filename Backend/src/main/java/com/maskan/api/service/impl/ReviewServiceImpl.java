@@ -7,6 +7,7 @@ import com.maskan.api.entity.Review;
 import com.maskan.api.entity.ReviewTargetType;
 import com.maskan.api.entity.User;
 import com.maskan.api.entity.BookingStatus;
+import com.maskan.api.exception.ForbiddenException;
 import com.maskan.api.exception.NotFoundException;
 import com.maskan.api.repository.BookingRepository;
 import com.maskan.api.repository.PropertyRepository;
@@ -39,9 +40,9 @@ public class ReviewServiceImpl implements ReviewService {
             throw new IllegalArgumentException("You already reviewed this listing");
         }
 
-        boolean canReview = canUserReviewProperty(property.getId(), email);
+        boolean canReview = canUserReviewProperty(user.getId(), property.getId());
         if (!canReview) {
-            throw new IllegalArgumentException("Only tenants with completed bookings can post reviews");
+            throw new ForbiddenException("Only verified guests who completed a stay can review this property");
         }
 
         ReviewTargetType targetType = request.getTargetType() == null
@@ -71,12 +72,11 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     @Transactional(readOnly = true)
-    public boolean canUserReviewProperty(String propertyId, String email) {
-        User user = getUserByEmail(email);
-        return bookingRepository.existsByGuestIdAndListingIdAndStatus(
-                user.getId(),
-                propertyId,
-                BookingStatus.COMPLETED
+    public boolean canUserReviewProperty(String userId, String propertyId) {
+        return bookingRepository.existsByGuestIdAndPropertyIdAndStatus(
+            userId,
+            propertyId,
+            BookingStatus.COMPLETED
         );
     }
 

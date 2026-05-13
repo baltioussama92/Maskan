@@ -1,6 +1,7 @@
 ﻿import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, Search, Menu, ChevronDown, LogOut, Settings, User, Sun, Moon } from 'lucide-react'
+import { useTheme } from '../../context/ThemeContext'
 
 const ROLE_COLORS = {
   PROPRIETAIRE: { pill: 'bg-primary-100 text-primary-700',  ring: 'ring-primary-200' },
@@ -17,8 +18,8 @@ const ROLE_LABELS = {
 export default function Topbar({ role = 'TENANT', pageTitle = 'Tableau de bord', onMenuToggle }) {
   const [notifOpen,   setNotifOpen]   = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
-  const [darkMode,    setDarkMode]    = useState(false)
   const [notifications] = useState([])
+  const { isDark, toggleTheme } = useTheme()
 
   const ac = ROLE_COLORS[role] || ROLE_COLORS.TENANT
   const unread = notifications.filter(n => n.unread).length
@@ -52,10 +53,10 @@ export default function Topbar({ role = 'TENANT', pageTitle = 'Tableau de bord',
         <motion.button
           whileTap={{ rotate: 360 }}
           transition={{ duration: 0.4 }}
-          onClick={() => setDarkMode(v => !v)}
+          onClick={toggleTheme}
           className="p-2 rounded-xl text-primary-400 hover:text-primary-700 hover:bg-primary-50 transition-colors"
         >
-          {darkMode ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
+          {isDark ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
         </motion.button>
 
         {/* Notifications */}

@@ -108,8 +108,8 @@ export default function Navbar({ user = null, onAuthClick, onLogout }) {
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
           scrolled
-            ? 'py-2.5 bg-primary-50/80 backdrop-blur-xl shadow-glass border-b border-primary-200/40'
-            : 'py-4 bg-primary-50/60 backdrop-blur-md'
+            ? 'py-2.5 bg-primary-50/80 backdrop-blur-xl shadow-glass border-b border-primary-200/40 dark:bg-slate-900/80 dark:border-slate-800 dark:shadow-[0_8px_32px_rgba(2,6,23,0.6)]'
+            : 'py-4 bg-primary-50/60 backdrop-blur-md dark:bg-slate-900/60'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-4">
@@ -136,8 +136,8 @@ export default function Navbar({ user = null, onAuthClick, onLogout }) {
               className="h-10 w-auto shrink-0 drop-shadow-sm"
             />
             <span className="font-poppins font-bold text-xl tracking-tight">
-              <span className="text-primary-600">Mas</span>
-              <span className="text-primary-900">kan</span>
+              <span className="text-primary-600 dark:text-slate-300">Mas</span>
+              <span className="text-primary-900 dark:text-slate-100">kan</span>
             </span>
           </Link>
 
@@ -148,11 +148,11 @@ export default function Navbar({ user = null, onAuthClick, onLogout }) {
                 key={to}
                 to={to}
                 className={`relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium
-                            transition-colors duration-150 ${
-                  isActive(to)
-                    ? 'text-primary-600 bg-primary-50'
-                    : 'text-primary-700 hover:text-primary-500 hover:bg-primary-50'
-                }`}
+                              transition-colors duration-150 ${
+                    isActive(to)
+                      ? 'text-primary-600 bg-primary-50 dark:text-slate-100 dark:bg-slate-800'
+                      : 'text-primary-700 hover:text-primary-500 hover:bg-primary-50 dark:text-slate-300 dark:hover:bg-slate-800/60'
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 {t(labelKey)}
@@ -176,7 +176,7 @@ export default function Navbar({ user = null, onAuthClick, onLogout }) {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.96 }}
                 onClick={() => setLanguageOpen((value) => !value)}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold border transition-colors duration-150 text-primary-700 border-primary-200 bg-primary-50 hover:bg-primary-100"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold border transition-colors duration-150 text-primary-700 border-primary-200 bg-primary-50 hover:bg-primary-100 dark:text-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800/60"
                 aria-label={t('nav.chooseLanguage')}
               >
                 <Globe className="w-4 h-4" />
@@ -193,7 +193,7 @@ export default function Navbar({ user = null, onAuthClick, onLogout }) {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -6, scale: 0.98 }}
                     transition={{ duration: 0.15, ease: 'easeOut' }}
-                    className="absolute right-0 top-full mt-2 w-44 rounded-2xl border border-primary-200/60 bg-primary-50/95 backdrop-blur-xl shadow-glass-lg overflow-hidden"
+                    className="absolute right-0 top-full mt-2 w-44 rounded-2xl border border-primary-200/60 bg-primary-50/95 backdrop-blur-xl shadow-glass-lg overflow-hidden dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-[0_12px_32px_rgba(2,6,23,0.6)]"
                   >
                     {languageOptions.map((option) => (
                       <button
@@ -204,8 +204,8 @@ export default function Navbar({ user = null, onAuthClick, onLogout }) {
                         }}
                         className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors duration-100 ${
                           language === option.code
-                            ? 'bg-primary-100 text-primary-700 font-semibold'
-                            : 'text-primary-700 hover:bg-primary-100/80'
+                            ? 'bg-primary-100 text-primary-700 font-semibold dark:bg-slate-800 dark:text-slate-100'
+                            : 'text-primary-700 hover:bg-primary-100/80 dark:text-slate-300 dark:hover:bg-slate-800/60'
                         }`}
                       >
                         <span>{option.label}</span>

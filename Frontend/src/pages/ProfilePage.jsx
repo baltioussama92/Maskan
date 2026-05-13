@@ -225,7 +225,7 @@ function EditProfileModal({ user, onSave, onCancel, onUserUpdate }) {
   )
 }
 
-export default function ProfilePage({ user, onUserUpdate }) {
+export default function ProfilePage({ user, onUserUpdate, onLogout }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [displayRole, setDisplayRole] = useState(() => localStorage.getItem(DISPLAY_ROLE_KEY) || 'GUEST')
@@ -393,11 +393,22 @@ export default function ProfilePage({ user, onUserUpdate }) {
     }
 
     if (action === 'logout') {
-      localStorage.removeItem(USER_STORAGE_KEY)
-      localStorage.removeItem(AUTH_TOKEN_KEY)
-      localStorage.removeItem(ROLE_STORAGE_KEY)
-      localStorage.removeItem(DISPLAY_ROLE_KEY)
-      navigate('/')
+      onLogout?.()
+      return
+    }
+
+    const sectionMap = {
+      account_settings: 'profile',
+      security: 'security',
+      notifications: 'notifications',
+      payment_methods: 'payments',
+      privacy: 'privacy',
+      help: 'support',
+    }
+
+    const section = sectionMap[action]
+    if (section) {
+      navigate(`/settings?section=${section}`)
     }
   }
 

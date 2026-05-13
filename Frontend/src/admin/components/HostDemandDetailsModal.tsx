@@ -55,7 +55,7 @@ export default function HostDemandDetailsModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl"
+          className="max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl dark:bg-slate-900 dark:shadow-[0_20px_45px_rgba(2,6,23,0.6)]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

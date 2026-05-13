@@ -1,12 +1,17 @@
-import React, { useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { Navigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { apiClient } from '../api/apiClient'
 import { ENDPOINTS } from '../api/endpoints'
+import { useNotifications } from '../context/NotificationContext'
+import { paymentMethodService } from '../services/paymentMethodService'
+import { preferencesService } from '../services/preferencesService'
+import { supportTicketService } from '../services/supportTicketService'
+import { useTheme } from '../context/ThemeContext'
 import {
   Settings, User, Bell, Shield, Globe, Moon, Sun,
   Eye, EyeOff, Check, Loader2, Trash2, LogOut,
-  ChevronRight, Smartphone, Mail, CreditCard, MapPin,
+  ChevronRight, Smartphone, Mail, CreditCard, MapPin, HelpCircle,
 } from 'lucide-react'
 
 const USER_KEY = 'user'
@@ -17,6 +22,9 @@ const SECTIONS = [
   { id: 'notifications', label: 'Notifications',   icon: Bell   },
   { id: 'security',      label: 'Sécurité',        icon: Shield },
   { id: 'preferences',   label: 'Préférences',     icon: Globe  },
+  { id: 'payments',      label: 'Paiements',       icon: CreditCard },
+  { id: 'privacy',       label: 'Confidentialité', icon: Shield },
+  { id: 'support',       label: 'Support',         icon: HelpCircle },
   { id: 'danger',        label: 'Zone dangereuse',  icon: Trash2 },
 ]
 
@@ -60,9 +68,17 @@ const inputClass = "w-full px-4 py-2.5 rounded-xl border border-primary-200 bg-p
 
 // ── Main Component ──────────────────────────────────────────
 export default function SettingsPage({ user, onUserUpdate, onLogout }) {
+  const [searchParams] = useSearchParams()
+  const { notify } = useNotifications()
   const [activeSection, setActiveSection] = useState('profile')
   const [saving, setSaving] = useState(false)
+  const [prefsSaving, setPrefsSaving] = useState(false)
   const [saved, setSaved] = useState('')
+  const [prefsLoading, setPrefsLoading] = useState(false)
+  const [paymentsLoading, setPaymentsLoading] = useState(false)
+  const [paymentSaving, setPaymentSaving] = useState(false)
+  const [supportLoading, setSupportLoading] = useState(false)
+  const [supportSaving, setSupportSaving] = useState(false)
 
   // Profile form
   const [form, setForm] = useState({
@@ -85,6 +101,29 @@ export default function SettingsPage({ user, onUserUpdate, onLogout }) {
     news:      true,
   })
 
+  const [privacy, setPrivacy] = useState({
+    showProfile: true,
+    showActivity: true,
+    allowMessages: true,
+  })
+
+  const [paymentMethods, setPaymentMethods] = useState([])
+  const [paymentForm, setPaymentForm] = useState({
+    cardholderName: '',
+    brand: 'Visa',
+    last4: '',
+    expMonth: '',
+    expYear: '',
+    isDefault: false,
+  })
+
+  const [supportTickets, setSupportTickets] = useState([])
+  const [supportForm, setSupportForm] = useState({
+    subject: '',
+    message: '',
+    priority: 'medium',
+  })
+
   // Security
   const [showPwd, setShowPwd] = useState(false)
   const [pwdForm, setPwdForm] = useState({
@@ -94,10 +133,91 @@ export default function SettingsPage({ user, onUserUpdate, onLogout }) {
   })
   const [pwdError, setPwdError] = useState('')
 
-  // Theme
-  const [darkMode, setDarkMode] = useState(false)
+  const { isDark, toggleTheme } = useTheme()
 
   if (!user) return <Navigate to="/" replace />
+
+  useEffect(() => {
+    const section = searchParams.get('section')
+    if (section && SECTIONS.some((item) => item.id === section)) {
+      setActiveSection(section)
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    if (!user) return
+
+    let active = true
+    const loadPreferences = async () => {
+      setPrefsLoading(true)
+      try {
+        const data = await preferencesService.getMy()
+        if (!active) return
+        setForm((prev) => ({
+          ...prev,
+          language: data?.language || prev.language,
+          currency: data?.currency || prev.currency,
+        }))
+        if (data?.notifications) {
+          setNotifs({
+            bookings: Boolean(data.notifications.bookings),
+            messages: Boolean(data.notifications.messages),
+            marketing: Boolean(data.notifications.marketing),
+            sms: Boolean(data.notifications.sms),
+            news: Boolean(data.notifications.news),
+          })
+        }
+        if (data?.privacy) {
+          setPrivacy({
+            showProfile: Boolean(data.privacy.showProfile),
+            showActivity: Boolean(data.privacy.showActivity),
+            allowMessages: Boolean(data.privacy.allowMessages),
+          })
+        }
+      } catch (error) {
+        if (!active) return
+        notify?.('Impossible de charger vos preferences.', 'error')
+      } finally {
+        if (active) setPrefsLoading(false)
+      }
+    }
+
+    const loadPayments = async () => {
+      setPaymentsLoading(true)
+      try {
+        const data = await paymentMethodService.listMine()
+        if (!active) return
+        setPaymentMethods(Array.isArray(data) ? data : [])
+      } catch (error) {
+        if (!active) return
+        notify?.('Impossible de charger vos moyens de paiement.', 'error')
+      } finally {
+        if (active) setPaymentsLoading(false)
+      }
+    }
+
+    const loadSupportTickets = async () => {
+      setSupportLoading(true)
+      try {
+        const data = await supportTicketService.listMine()
+        if (!active) return
+        setSupportTickets(Array.isArray(data) ? data : [])
+      } catch (error) {
+        if (!active) return
+        notify?.('Impossible de charger vos tickets de support.', 'error')
+      } finally {
+        if (active) setSupportLoading(false)
+      }
+    }
+
+    loadPreferences()
+    loadPayments()
+    loadSupportTickets()
+
+    return () => {
+      active = false
+    }
+  }, [user, notify])
 
   const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
 
@@ -129,8 +249,10 @@ export default function SettingsPage({ user, onUserUpdate, onLogout }) {
       onUserUpdate?.(updated)
       setSaved('profile')
       setTimeout(() => setSaved(''), 2000)
+      notify?.('Profil mis a jour.', 'success')
     } catch (error) {
       console.error('Profile update failed:', error)
+      notify?.('Impossible de mettre a jour le profil.', 'error')
     } finally {
       setSaving(false)
     }
@@ -159,11 +281,155 @@ export default function SettingsPage({ user, onUserUpdate, onLogout }) {
       setPwdForm({ current: '', next: '', confirm: '' })
       setSaved('security')
       setTimeout(() => setSaved(''), 2000)
+      notify?.('Mot de passe mis a jour.', 'success')
     } catch (error) {
       console.error('Password update failed:', error)
       setPwdError(error?.message || 'Échec de la mise à jour du mot de passe.')
+      notify?.('Impossible de mettre a jour le mot de passe.', 'error')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleNotificationsSave = async () => {
+    setPrefsSaving(true)
+    try {
+      await preferencesService.update({ notifications: notifs })
+      setSaved('notifications')
+      setTimeout(() => setSaved(''), 2000)
+      notify?.('Notifications mises a jour.', 'success')
+    } catch (error) {
+      notify?.('Impossible de mettre a jour vos notifications.', 'error')
+    } finally {
+      setPrefsSaving(false)
+    }
+  }
+
+  const handlePreferencesSave = async () => {
+    setPrefsSaving(true)
+    try {
+      await preferencesService.update({ language: form.language, currency: form.currency })
+      setSaved('preferences')
+      setTimeout(() => setSaved(''), 2000)
+      notify?.('Preferences enregistrees.', 'success')
+    } catch (error) {
+      notify?.('Impossible de mettre a jour vos preferences.', 'error')
+    } finally {
+      setPrefsSaving(false)
+    }
+  }
+
+  const handlePrivacySave = async () => {
+    setPrefsSaving(true)
+    try {
+      await preferencesService.update({ privacy })
+      setSaved('privacy')
+      setTimeout(() => setSaved(''), 2000)
+      notify?.('Parametres de confidentialite mis a jour.', 'success')
+    } catch (error) {
+      notify?.('Impossible de mettre a jour la confidentialite.', 'error')
+    } finally {
+      setPrefsSaving(false)
+    }
+  }
+
+  const handlePaymentSubmit = async (event) => {
+    event.preventDefault()
+    if (!paymentForm.cardholderName.trim() || !paymentForm.last4.trim()) {
+      notify?.('Veuillez renseigner le titulaire et les 4 derniers chiffres.', 'error')
+      return
+    }
+
+    const expMonth = Number(paymentForm.expMonth)
+    const expYear = Number(paymentForm.expYear)
+    if (!expMonth || !expYear) {
+      notify?.('Veuillez renseigner une date d\'expiration valide.', 'error')
+      return
+    }
+
+    setPaymentSaving(true)
+    try {
+      const created = await paymentMethodService.create({
+        cardholderName: paymentForm.cardholderName.trim(),
+        brand: paymentForm.brand.trim(),
+        last4: paymentForm.last4.trim(),
+        expMonth,
+        expYear,
+        isDefault: paymentForm.isDefault,
+      })
+
+      setPaymentMethods((prev) => {
+        const updated = paymentForm.isDefault
+          ? prev.map((item) => ({ ...item, isDefault: false }))
+          : prev
+        return [created, ...updated]
+      })
+      setPaymentForm({
+        cardholderName: '',
+        brand: 'Visa',
+        last4: '',
+        expMonth: '',
+        expYear: '',
+        isDefault: false,
+      })
+      notify?.('Moyen de paiement ajoute.', 'success')
+    } catch (error) {
+      notify?.('Impossible d\'ajouter ce moyen de paiement.', 'error')
+    } finally {
+      setPaymentSaving(false)
+    }
+  }
+
+  const handlePaymentDefault = async (id) => {
+    setPaymentsLoading(true)
+    try {
+      const updated = await paymentMethodService.setDefault(id)
+      setPaymentMethods((prev) => prev.map((item) => ({
+        ...item,
+        isDefault: item.id === updated.id,
+      })))
+      notify?.('Moyen de paiement par defaut mis a jour.', 'success')
+    } catch (error) {
+      notify?.('Impossible de definir ce moyen de paiement.', 'error')
+    } finally {
+      setPaymentsLoading(false)
+    }
+  }
+
+  const handlePaymentRemove = async (id) => {
+    setPaymentsLoading(true)
+    try {
+      await paymentMethodService.remove(id)
+      setPaymentMethods((prev) => prev.filter((item) => item.id !== id))
+      notify?.('Moyen de paiement supprime.', 'success')
+    } catch (error) {
+      notify?.('Impossible de supprimer ce moyen de paiement.', 'error')
+    } finally {
+      setPaymentsLoading(false)
+    }
+  }
+
+  const handleSupportSubmit = async (event) => {
+    event.preventDefault()
+    if (!supportForm.subject.trim() || !supportForm.message.trim()) {
+      notify?.('Veuillez remplir le sujet et le message.', 'error')
+      return
+    }
+
+    setSupportSaving(true)
+    try {
+      const created = await supportTicketService.create({
+        subject: supportForm.subject.trim(),
+        message: supportForm.message.trim(),
+        priority: supportForm.priority,
+      })
+      setSupportTickets((prev) => [created, ...prev])
+      setSupportForm({ subject: '', message: '', priority: 'medium' })
+      notify?.('Votre demande a ete envoyee.', 'success')
+    } catch (error) {
+      notify?.('Impossible d\'envoyer votre demande.', 'error')
+    } finally {
+      setSupportSaving(false)
     }
   }
 
@@ -246,22 +512,6 @@ export default function SettingsPage({ user, onUserUpdate, onLogout }) {
                       <FormField icon={Smartphone} label="Téléphone">
                         <input name="phone" value={form.phone} onChange={handleChange} className={inputClass} placeholder="+216 XX XXX XXX" />
                       </FormField>
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField icon={Globe} label="Langue">
-                          <select name="language" value={form.language} onChange={handleChange} className={inputClass + ' cursor-pointer'}>
-                            <option>Français</option>
-                            <option>العربية</option>
-                            <option>English</option>
-                          </select>
-                        </FormField>
-                        <FormField icon={CreditCard} label="Devise">
-                          <select name="currency" value={form.currency} onChange={handleChange} className={inputClass + ' cursor-pointer'}>
-                            <option>DT</option>
-                            <option>EUR</option>
-                            <option>USD</option>
-                          </select>
-                        </FormField>
-                      </div>
                       <FormField icon={User} label="Biographie">
                         <textarea name="bio" value={form.bio} onChange={handleChange} className={inputClass + ' resize-none'} placeholder="Parlez un peu de vous..." rows="3" />
                       </FormField>
@@ -279,38 +529,45 @@ export default function SettingsPage({ user, onUserUpdate, onLogout }) {
                 {/* ─── Notifications ───────────────────────── */}
                 {activeSection === 'notifications' && (
                   <Card title="Notifications" subtitle="Choisissez comment vous souhaitez être notifié">
-                    <div className="divide-y divide-primary-200">
-                      <Toggle
-                        label="Mises à jour des réservations"
-                        description="Confirmations, annulations et rappels"
-                        checked={notifs.bookings}
-                        onChange={() => setNotifs(p => ({ ...p, bookings: !p.bookings }))}
-                      />
-                      <Toggle
-                        label="Nouveaux messages"
-                        description="Notifications à chaque message reçu"
-                        checked={notifs.messages}
-                        onChange={() => setNotifs(p => ({ ...p, messages: !p.messages }))}
-                      />
-                      <Toggle
-                        label="Emails promotionnels"
-                        description="Offres spéciales et recommandations"
-                        checked={notifs.marketing}
-                        onChange={() => setNotifs(p => ({ ...p, marketing: !p.marketing }))}
-                      />
-                      <Toggle
-                        label="Alertes SMS"
-                        description="Notifications urgentes par SMS"
-                        checked={notifs.sms}
-                        onChange={() => setNotifs(p => ({ ...p, sms: !p.sms }))}
-                      />
-                      <Toggle
-                        label="Nouveautés produit"
-                        description="Nouvelles fonctionnalités et améliorations"
-                        checked={notifs.news}
-                        onChange={() => setNotifs(p => ({ ...p, news: !p.news }))}
-                      />
-                    </div>
+                    {prefsLoading ? (
+                      <div className="flex items-center gap-2 text-sm text-primary-500">
+                        <Loader2 className="w-4 h-4 animate-spin" /> Chargement des preferences...
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-primary-200">
+                        <Toggle
+                          label="Mises à jour des réservations"
+                          description="Confirmations, annulations et rappels"
+                          checked={notifs.bookings}
+                          onChange={() => setNotifs(p => ({ ...p, bookings: !p.bookings }))}
+                        />
+                        <Toggle
+                          label="Nouveaux messages"
+                          description="Notifications à chaque message reçu"
+                          checked={notifs.messages}
+                          onChange={() => setNotifs(p => ({ ...p, messages: !p.messages }))}
+                        />
+                        <Toggle
+                          label="Emails promotionnels"
+                          description="Offres spéciales et recommandations"
+                          checked={notifs.marketing}
+                          onChange={() => setNotifs(p => ({ ...p, marketing: !p.marketing }))}
+                        />
+                        <Toggle
+                          label="Alertes SMS"
+                          description="Notifications urgentes par SMS"
+                          checked={notifs.sms}
+                          onChange={() => setNotifs(p => ({ ...p, sms: !p.sms }))}
+                        />
+                        <Toggle
+                          label="Nouveautés produit"
+                          description="Nouvelles fonctionnalités et améliorations"
+                          checked={notifs.news}
+                          onChange={() => setNotifs(p => ({ ...p, news: !p.news }))}
+                        />
+                      </div>
+                    )}
+                    <SaveButton label="Enregistrer" loading={prefsSaving} saved={saved === 'notifications'} onClick={handleNotificationsSave} />
                   </Card>
                 )}
 
@@ -365,27 +622,271 @@ export default function SettingsPage({ user, onUserUpdate, onLogout }) {
                 {/* ─── Preferences ─────────────────────────── */}
                 {activeSection === 'preferences' && (
                   <Card title="Préférences" subtitle="Personnalisez votre expérience">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                      <FormField icon={Globe} label="Langue">
+                        <select name="language" value={form.language} onChange={handleChange} className={inputClass + ' cursor-pointer'}>
+                          <option>Francais</option>
+                          <option>العربية</option>
+                          <option>English</option>
+                        </select>
+                      </FormField>
+                      <FormField icon={CreditCard} label="Devise">
+                        <select name="currency" value={form.currency} onChange={handleChange} className={inputClass + ' cursor-pointer'}>
+                          <option>DT</option>
+                          <option>EUR</option>
+                          <option>USD</option>
+                        </select>
+                      </FormField>
+                    </div>
                     <div className="divide-y divide-primary-200">
                       <div className="flex items-center justify-between py-3.5">
                         <div>
                           <p className="text-sm font-semibold text-primary-900">Mode sombre</p>
-                          <p className="text-xs text-primary-500 mt-0.5">Activer le thème sombre (bientôt disponible)</p>
+                          <p className="text-xs text-primary-500 mt-0.5">Activer le theme sombre</p>
                         </div>
                         <button
-                          onClick={() => setDarkMode(v => !v)}
+                          onClick={toggleTheme}
                           className={`relative w-11 h-6 rounded-full shrink-0 transition-colors ${
-                            darkMode ? 'bg-primary-500' : 'bg-primary-200'
+                            isDark ? 'bg-primary-500' : 'bg-primary-200'
                           }`}
                         >
                           <motion.div
-                            animate={{ x: darkMode ? 20 : 2 }}
+                            animate={{ x: isDark ? 20 : 2 }}
                             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                             className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm flex items-center justify-center"
                           >
-                            {darkMode ? <Moon className="w-2.5 h-2.5 text-primary-500" /> : <Sun className="w-2.5 h-2.5 text-primary-300" />}
+                            {isDark ? <Moon className="w-2.5 h-2.5 text-primary-500" /> : <Sun className="w-2.5 h-2.5 text-primary-300" />}
                           </motion.div>
                         </button>
                       </div>
+                    </div>
+                    <SaveButton label="Enregistrer" loading={prefsSaving} saved={saved === 'preferences'} onClick={handlePreferencesSave} />
+                  </Card>
+                )}
+
+                {/* ─── Privacy ───────────────────────────── */}
+                {activeSection === 'privacy' && (
+                  <Card title="Confidentialite" subtitle="Gerez vos informations personnelles">
+                    {prefsLoading ? (
+                      <div className="flex items-center gap-2 text-sm text-primary-500">
+                        <Loader2 className="w-4 h-4 animate-spin" /> Chargement des preferences...
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-primary-200">
+                        <Toggle
+                          label="Afficher mon profil"
+                          description="Votre profil reste visible sur la plateforme"
+                          checked={privacy.showProfile}
+                          onChange={() => setPrivacy((prev) => ({ ...prev, showProfile: !prev.showProfile }))}
+                        />
+                        <Toggle
+                          label="Afficher mon activite"
+                          description="Partagez vos avis et activites recentes"
+                          checked={privacy.showActivity}
+                          onChange={() => setPrivacy((prev) => ({ ...prev, showActivity: !prev.showActivity }))}
+                        />
+                        <Toggle
+                          label="Autoriser les messages"
+                          description="Les hôtes peuvent vous contacter"
+                          checked={privacy.allowMessages}
+                          onChange={() => setPrivacy((prev) => ({ ...prev, allowMessages: !prev.allowMessages }))}
+                        />
+                      </div>
+                    )}
+                    <SaveButton label="Enregistrer" loading={prefsSaving} saved={saved === 'privacy'} onClick={handlePrivacySave} />
+                  </Card>
+                )}
+
+                {/* ─── Payments ─────────────────────────── */}
+                {activeSection === 'payments' && (
+                  <Card title="Moyens de paiement" subtitle="Gerez vos moyens de paiement">
+                    {paymentsLoading ? (
+                      <div className="flex items-center gap-2 text-sm text-primary-500">
+                        <Loader2 className="w-4 h-4 animate-spin" /> Chargement des moyens de paiement...
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {paymentMethods.length === 0 ? (
+                          <p className="text-sm text-primary-500">Aucun moyen de paiement enregistre.</p>
+                        ) : (
+                          paymentMethods.map((method) => (
+                            <div key={method.id} className="flex items-center justify-between gap-3 rounded-xl border border-primary-200 bg-white px-4 py-3">
+                              <div>
+                                <p className="text-sm font-semibold text-primary-900">{method.brand} •••• {method.last4}</p>
+                                <p className="text-xs text-primary-500">{method.cardholderName} · Exp {String(method.expMonth).padStart(2, '0')}/{method.expYear}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {method.isDefault ? (
+                                  <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Par defaut</span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => handlePaymentDefault(method.id)}
+                                    className="text-xs font-semibold text-primary-600 hover:underline"
+                                  >
+                                    Definir par defaut
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handlePaymentRemove(method.id)}
+                                  className="text-xs font-semibold text-red-600 hover:underline"
+                                >
+                                  Supprimer
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+
+                    <form onSubmit={handlePaymentSubmit} className="mt-6 space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField icon={User} label="Titulaire">
+                          <input
+                            name="cardholderName"
+                            value={paymentForm.cardholderName}
+                            onChange={(event) => setPaymentForm((prev) => ({ ...prev, cardholderName: event.target.value }))}
+                            className={inputClass}
+                            placeholder="Nom sur la carte"
+                          />
+                        </FormField>
+                        <FormField icon={CreditCard} label="Reseau">
+                          <select
+                            name="brand"
+                            value={paymentForm.brand}
+                            onChange={(event) => setPaymentForm((prev) => ({ ...prev, brand: event.target.value }))}
+                            className={inputClass + ' cursor-pointer'}
+                          >
+                            <option>Visa</option>
+                            <option>Mastercard</option>
+                            <option>Amex</option>
+                          </select>
+                        </FormField>
+                        <FormField icon={CreditCard} label="Derniers 4 chiffres">
+                          <input
+                            name="last4"
+                            value={paymentForm.last4}
+                            onChange={(event) => setPaymentForm((prev) => ({ ...prev, last4: event.target.value }))}
+                            className={inputClass}
+                            maxLength={4}
+                            placeholder="1234"
+                          />
+                        </FormField>
+                        <FormField icon={CreditCard} label="Expiration">
+                          <div className="flex gap-2">
+                            <input
+                              name="expMonth"
+                              value={paymentForm.expMonth}
+                              onChange={(event) => setPaymentForm((prev) => ({ ...prev, expMonth: event.target.value }))}
+                              className={inputClass}
+                              placeholder="MM"
+                            />
+                            <input
+                              name="expYear"
+                              value={paymentForm.expYear}
+                              onChange={(event) => setPaymentForm((prev) => ({ ...prev, expYear: event.target.value }))}
+                              className={inputClass}
+                              placeholder="YYYY"
+                            />
+                          </div>
+                        </FormField>
+                      </div>
+                      <label className="flex items-center gap-2 text-sm text-primary-700">
+                        <input
+                          type="checkbox"
+                          checked={paymentForm.isDefault}
+                          onChange={(event) => setPaymentForm((prev) => ({ ...prev, isDefault: event.target.checked }))}
+                        />
+                        Utiliser comme moyen de paiement par defaut
+                      </label>
+                      <div className="pt-4">
+                        <motion.button
+                          whileHover={!paymentSaving ? { scale: 1.02 } : {}}
+                          whileTap={!paymentSaving ? { scale: 0.98 } : {}}
+                          type="submit"
+                          disabled={paymentSaving}
+                          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-sm font-bold text-primary-50 shadow-md transition-all disabled:opacity-70"
+                        >
+                          {paymentSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                          {paymentSaving ? 'Ajout en cours...' : 'Ajouter'}
+                        </motion.button>
+                      </div>
+                    </form>
+                  </Card>
+                )}
+
+                {/* ─── Support ──────────────────────────── */}
+                {activeSection === 'support' && (
+                  <Card title="Support" subtitle="Besoin d'aide ? Contactez-nous">
+                    <form onSubmit={handleSupportSubmit} className="space-y-4">
+                      <FormField icon={HelpCircle} label="Sujet">
+                        <input
+                          name="subject"
+                          value={supportForm.subject}
+                          onChange={(event) => setSupportForm((prev) => ({ ...prev, subject: event.target.value }))}
+                          className={inputClass}
+                          placeholder="Ex: Probleme de reservation"
+                        />
+                      </FormField>
+                      <FormField icon={Mail} label="Message">
+                        <textarea
+                          name="message"
+                          value={supportForm.message}
+                          onChange={(event) => setSupportForm((prev) => ({ ...prev, message: event.target.value }))}
+                          className={inputClass + ' resize-none'}
+                          rows="4"
+                          placeholder="Decrivez votre demande"
+                        />
+                      </FormField>
+                      <FormField icon={Shield} label="Priorite">
+                        <select
+                          name="priority"
+                          value={supportForm.priority}
+                          onChange={(event) => setSupportForm((prev) => ({ ...prev, priority: event.target.value }))}
+                          className={inputClass + ' cursor-pointer'}
+                        >
+                          <option value="low">Basse</option>
+                          <option value="medium">Moyenne</option>
+                          <option value="high">Haute</option>
+                        </select>
+                      </FormField>
+                      <div className="pt-4">
+                        <motion.button
+                          whileHover={!supportSaving ? { scale: 1.02 } : {}}
+                          whileTap={!supportSaving ? { scale: 0.98 } : {}}
+                          type="submit"
+                          disabled={supportSaving}
+                          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-sm font-bold text-primary-50 shadow-md transition-all disabled:opacity-70"
+                        >
+                          {supportSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                          {supportSaving ? 'Envoi...' : 'Envoyer'}
+                        </motion.button>
+                      </div>
+                    </form>
+
+                    <div className="mt-6">
+                      <h3 className="text-sm font-semibold text-primary-900 mb-3">Vos demandes recentes</h3>
+                      {supportLoading ? (
+                        <div className="flex items-center gap-2 text-sm text-primary-500">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Chargement des demandes...
+                        </div>
+                      ) : supportTickets.length === 0 ? (
+                        <p className="text-sm text-primary-500">Aucune demande pour le moment.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {supportTickets.map((ticket) => (
+                            <div key={ticket.id} className="rounded-xl border border-primary-200 bg-white px-4 py-3">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-semibold text-primary-900">{ticket.subject}</p>
+                                <span className="text-xs text-primary-500">{ticket.status}</span>
+                              </div>
+                              <p className="text-xs text-primary-500">Priorite: {ticket.priority}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </Card>
                 )}

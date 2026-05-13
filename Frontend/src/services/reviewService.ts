@@ -1,6 +1,6 @@
 import { apiClient } from '../api/apiClient'
 import { ENDPOINTS } from '../api/endpoints'
-import type { ReviewEligibilityResponse, ReviewRequest, ReviewResponse } from '../utils/contracts'
+import type { ReviewRequest, ReviewResponse } from '../utils/contracts'
 
 export const reviewService = {
   async create(payload: ReviewRequest): Promise<ReviewResponse> {
@@ -14,7 +14,7 @@ export const reviewService = {
   },
 
   async canReview(propertyId: number | string): Promise<boolean> {
-    const { data } = await apiClient.get<ReviewEligibilityResponse>(ENDPOINTS.reviews.canReview(propertyId))
-    return Boolean(data?.canReview)
+    const { data } = await apiClient.get<boolean>(ENDPOINTS.reviews.canReview(propertyId))
+    return Boolean(data)
   },
 }

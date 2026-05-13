@@ -154,15 +154,15 @@ export default function ListingDetailsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white dark:bg-slate-900">
         {/* Header */}
-        <div className="sticky top-0 border-b border-gray-200 bg-white px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-[#3A2D28]">
+        <div className="sticky top-0 border-b border-gray-200 bg-white px-6 py-4 flex items-center justify-between dark:border-slate-700 dark:bg-slate-900">
+          <h2 className="text-xl font-bold text-[#3A2D28] dark:text-slate-100">
             {listing?.title || 'Listing Details'}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700 dark:text-slate-300 dark:hover:text-slate-100"
           >
             X
           </button>

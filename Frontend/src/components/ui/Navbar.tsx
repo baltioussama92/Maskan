@@ -199,8 +199,8 @@ const Navbar: React.FC = () => {
         className={[
           'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
           useSolidNavbar
-            ? 'bg-primary-50/80 backdrop-blur-lg shadow-glass border-b border-primary-200/20'
-            : 'bg-transparent',
+            ? 'bg-primary-50/80 backdrop-blur-lg shadow-glass border-b border-primary-200/20 dark:bg-slate-900/80 dark:border-slate-800 dark:shadow-[0_8px_32px_rgba(2,6,23,0.6)]'
+            : 'bg-transparent dark:bg-transparent',
         ].join(' ')}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -237,10 +237,10 @@ const Navbar: React.FC = () => {
                     className={[
                       'flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200',
                       active
-                        ? 'bg-primary-500/10 text-primary-600'
+                        ? 'bg-primary-500/10 text-primary-600 dark:bg-slate-800 dark:text-white'
                         : useSolidNavbar
-                          ? 'text-primary-600 hover:text-primary-600 hover:bg-primary-50'
-                          : 'text-primary-50/90 hover:text-primary-50 hover:bg-primary-50/10',
+                          ? 'text-primary-600 hover:text-primary-600 hover:bg-primary-50 dark:text-slate-200 dark:hover:bg-slate-800/60'
+                          : 'text-primary-50/90 hover:text-primary-50 hover:bg-primary-50/10 dark:text-slate-50 dark:hover:bg-slate-800/10',
                     ].join(' ')}
                   >
                     {icon}
@@ -261,8 +261,8 @@ const Navbar: React.FC = () => {
                   className={[
                     'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold border transition-colors',
                     useSolidNavbar
-                      ? 'border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100'
-                      : 'border-primary-50/20 bg-primary-50/10 text-primary-50 hover:bg-primary-50/20',
+                      ? 'border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800/60'
+                      : 'border-primary-50/20 bg-primary-50/10 text-primary-50 hover:bg-primary-50/20 dark:border-transparent dark:bg-transparent dark:text-slate-50 dark:hover:bg-slate-800/10',
                   ].join(' ')}
                   aria-label={t('nav.chooseLanguage')}
                 >
@@ -280,7 +280,7 @@ const Navbar: React.FC = () => {
                       initial="hidden"
                       animate="visible"
                       exit="exit"
-                      className="absolute right-0 top-full mt-2 w-44 rounded-2xl border border-primary-200/50 bg-primary-50/90 backdrop-blur-xl shadow-glass-lg overflow-hidden py-1"
+                      className="absolute right-0 top-full mt-2 w-44 rounded-2xl border border-primary-200/50 bg-primary-50/90 backdrop-blur-xl shadow-glass-lg overflow-hidden py-1 dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-[0_12px_32px_rgba(2,6,23,0.6)]"
                     >
                       {languageOptions.map((option) => (
                         <button
@@ -291,8 +291,8 @@ const Navbar: React.FC = () => {
                           }}
                           className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors duration-100 ${
                             language === option.code
-                              ? 'bg-primary-100 text-primary-700 font-semibold'
-                              : 'text-primary-700 hover:bg-primary-50'
+                              ? 'bg-primary-100 text-primary-700 font-semibold dark:bg-slate-800 dark:text-slate-100'
+                              : 'text-primary-700 hover:bg-primary-50 dark:text-slate-300 dark:hover:bg-slate-800/60'
                           }`}
                         >
                           <span>{option.label}</span>
@@ -312,10 +312,10 @@ const Navbar: React.FC = () => {
                     className={[
                       'relative p-2 rounded-xl transition-colors',
                       pathname === '/messages'
-                        ? 'bg-primary-500/10 text-primary-600'
+                        ? 'bg-primary-500/10 text-primary-600 dark:bg-slate-800 dark:text-white'
                         : useSolidNavbar
-                          ? 'text-primary-600 hover:bg-primary-50'
-                          : 'text-primary-50/90 hover:bg-primary-50/10',
+                          ? 'text-primary-600 hover:bg-primary-50 dark:text-slate-200 dark:hover:bg-slate-800/60'
+                          : 'text-primary-50/90 hover:bg-primary-50/10 dark:text-slate-50 dark:hover:bg-slate-800/10',
                     ].join(' ')}
                     aria-label={t('nav.messages')}
                   >
@@ -326,8 +326,8 @@ const Navbar: React.FC = () => {
                     className={[
                       'relative p-2 rounded-xl transition-colors',
                       useSolidNavbar
-                        ? 'text-primary-600 hover:bg-primary-50'
-                        : 'text-primary-50/90 hover:bg-primary-50/10',
+                        ? 'text-primary-600 hover:bg-primary-50 dark:text-slate-200 dark:hover:bg-slate-800/60'
+                        : 'text-primary-50/90 hover:bg-primary-50/10 dark:text-slate-50 dark:hover:bg-slate-800/10',
                     ].join(' ')}
                     aria-label={`${unreadCount} notifications`}
                   >

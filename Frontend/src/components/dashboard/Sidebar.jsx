@@ -90,9 +90,27 @@ const NAV_CONFIG = {
 
 // -- Accent colour map -----------------------------------------
 const ACCENT = {
-  indigo:  { active: 'bg-primary-500 text-primary-50 shadow-md',  hover: 'hover:bg-primary-50 hover:text-primary-700',  pill: 'bg-primary-100 text-primary-600', dot: 'bg-primary-500', ring: 'ring-primary-300' },
-  emerald: { active: 'bg-primary-600 text-primary-50 shadow-md', hover: 'hover:bg-primary-50 hover:text-primary-700', pill: 'bg-primary-100 text-primary-600', dot: 'bg-primary-600', ring: 'ring-primary-300' },
-  slate:   { active: 'bg-primary-800 text-primary-50 shadow-md',   hover: 'hover:bg-primary-50 hover:text-primary-800',   pill: 'bg-primary-100 text-primary-700',    dot: 'bg-primary-700',   ring: 'ring-primary-200'   },
+  indigo: {
+    active: 'bg-primary-500 text-primary-50 shadow-md dark:bg-slate-800 dark:text-white',
+    hover: 'hover:bg-primary-50 hover:text-primary-700 dark:hover:bg-slate-800/60 dark:hover:text-white',
+    pill: 'bg-primary-100 text-primary-600 dark:bg-slate-800 dark:text-slate-200',
+    dot: 'bg-primary-500 dark:bg-slate-400',
+    ring: 'ring-primary-300 dark:ring-slate-700',
+  },
+  emerald: {
+    active: 'bg-primary-600 text-primary-50 shadow-md dark:bg-slate-800 dark:text-white',
+    hover: 'hover:bg-primary-50 hover:text-primary-700 dark:hover:bg-slate-800/60 dark:hover:text-white',
+    pill: 'bg-primary-100 text-primary-600 dark:bg-slate-800 dark:text-slate-200',
+    dot: 'bg-primary-600 dark:bg-slate-400',
+    ring: 'ring-primary-300 dark:ring-slate-700',
+  },
+  slate: {
+    active: 'bg-primary-800 text-primary-50 shadow-md dark:bg-slate-800 dark:text-white',
+    hover: 'hover:bg-primary-50 hover:text-primary-800 dark:hover:bg-slate-800/60 dark:hover:text-white',
+    pill: 'bg-primary-100 text-primary-700 dark:bg-slate-800 dark:text-slate-200',
+    dot: 'bg-primary-700 dark:bg-slate-400',
+    ring: 'ring-primary-200 dark:ring-slate-700',
+  },
 }
 
 export default function Sidebar({ role = 'TENANT', collapsed, onToggle }) {
@@ -105,11 +123,11 @@ export default function Sidebar({ role = 'TENANT', collapsed, onToggle }) {
       animate={{ width: collapsed ? 72 : 256 }}
       transition={{ type: 'spring', stiffness: 320, damping: 34 }}
       className="relative flex flex-col h-screen bg-primary-100 border-r border-primary-200
-                 overflow-hidden shrink-0 z-30 shadow-sm"
+             overflow-hidden shrink-0 z-30 shadow-sm dark:bg-slate-900 dark:border-slate-800"
     >
       {/* -- Logo ---------------------------------------------- */}
       <div
-        className={`flex items-center h-16 px-4 border-b border-primary-200 shrink-0 overflow-hidden
+        className={`flex items-center h-16 px-4 border-b border-primary-200 shrink-0 overflow-hidden dark:border-slate-800
                        ${collapsed ? 'justify-center' : 'gap-3'}`}>
         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0
                         bg-gradient-to-br ${
@@ -134,9 +152,9 @@ export default function Sidebar({ role = 'TENANT', collapsed, onToggle }) {
                   role === 'ADMIN'        ? 'text-primary-800'  :
                                             'text-primary-400'
                 }>Mas</span>
-                <span className="text-primary-900">kan</span>
+                <span className="text-primary-900 dark:text-white">kan</span>
               </span>
-              <p className="text-[10px] text-primary-400 font-medium -mt-0.5 capitalize">
+              <p className="text-[10px] text-primary-400 font-medium -mt-0.5 capitalize dark:text-slate-400">
                 {config.label}
               </p>
             </motion.div>
@@ -155,7 +173,7 @@ export default function Sidebar({ role = 'TENANT', collapsed, onToggle }) {
                   animate={{ opacity: 1 }}
                   exit  ={{ opacity: 0 }}
                   transition={{ duration: 0.15 }}
-                  className="px-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-primary-300"
+                  className="px-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-primary-300 dark:text-slate-500"
                 >
                   {group.title}
                 </motion.p>
@@ -173,7 +191,7 @@ export default function Sidebar({ role = 'TENANT', collapsed, onToggle }) {
                       title={collapsed ? label : undefined}
                       className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl
                                   text-sm font-medium transition-all duration-150 overflow-hidden
-                                  ${isActive ? ac.active : `text-primary-700 ${ac.hover}`}
+                                  ${isActive ? ac.active : `text-primary-700 dark:text-slate-200 ${ac.hover}`}
                                   ${collapsed ? 'justify-center' : ''}`}
                     >
                       {/* Sliding active background */}
@@ -205,9 +223,9 @@ export default function Sidebar({ role = 'TENANT', collapsed, onToggle }) {
                       {badge && !collapsed && (
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full
                                           ${isActive
-                                            ? 'bg-primary-50/25 text-primary-50'
+                                            ? 'bg-primary-50/25 text-primary-50 dark:bg-slate-900/50 dark:text-white'
                                             : badgeAlert
-                                              ? 'bg-red-100 text-red-600'
+                                              ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-200'
                                               : ac.pill}`}>
                           {badge}
                         </span>

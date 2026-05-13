@@ -47,5 +47,6 @@ public class UserDto {
     List<String> otherAttachmentFiles;
     String selfieFile;
     Instant identitySubmittedAt;
+    UserPreferencesDto preferences;
 }
 

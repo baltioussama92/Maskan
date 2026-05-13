@@ -536,6 +536,7 @@ export default function PropertyDetails({ user, onAuthClick }) {
   const [reviews, setReviews] = useState([])
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
+  const [canReview, setCanReview] = useState(false)
   const [reviewForm, setReviewForm] = useState({
     rating: 5,
     targetType: 'HOUSE',
@@ -617,6 +618,28 @@ export default function PropertyDetails({ user, onAuthClick }) {
       active = false
     }
   }, [property?.id])
+
+  useEffect(() => {
+    if (!user || !property?.id) {
+      setCanReview(false)
+      return
+    }
+
+    let active = true
+    reviewService.canReview(property.id)
+      .then((value) => {
+        if (!active) return
+        setCanReview(Boolean(value))
+      })
+      .catch(() => {
+        if (!active) return
+        setCanReview(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [user, property?.id])
 
   const groupedReviews = useMemo(() => {
     const base = { HOUSE: [], OWNER: [], SERVICE: [] }
@@ -948,69 +971,75 @@ export default function PropertyDetails({ user, onAuthClick }) {
                 Donnez une note et partagez votre avis sur la maison, le propriétaire ou le service.
               </p>
 
-              <form onSubmit={handleReviewSubmit} className="mt-4 space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-semibold text-primary-700">Catégorie</label>
-                    <select
-                      value={reviewForm.targetType}
-                      onChange={(event) => setReviewForm((previous) => ({
-                        ...previous,
-                        targetType: event.target.value,
-                      }))}
-                      className="mt-1 w-full rounded-xl border border-primary-200 bg-primary-100 px-3 py-2.5 text-sm text-primary-800 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-200"
-                    >
-                      {REVIEW_TARGET_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                      ))}
-                    </select>
-                  </div>
+              {canReview ? (
+                <form onSubmit={handleReviewSubmit} className="mt-4 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-primary-700">Catégorie</label>
+                      <select
+                        value={reviewForm.targetType}
+                        onChange={(event) => setReviewForm((previous) => ({
+                          ...previous,
+                          targetType: event.target.value,
+                        }))}
+                        className="mt-1 w-full rounded-xl border border-primary-200 bg-primary-100 px-3 py-2.5 text-sm text-primary-800 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-200"
+                      >
+                        {REVIEW_TARGET_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div>
-                    <label className="text-xs font-semibold text-primary-700">Étoiles</label>
-                    <div className="mt-2 flex items-center gap-1.5">
-                      {[1, 2, 3, 4, 5].map((value) => (
-                        <button
-                          type="button"
-                          key={value}
-                          onClick={() => setReviewForm((previous) => ({ ...previous, rating: value }))}
-                          className="p-1"
-                          aria-label={`${value} étoile${value > 1 ? 's' : ''}`}
-                        >
-                          <Star className={`w-5 h-5 ${value <= reviewForm.rating ? 'fill-amber-400 text-amber-400' : 'text-primary-300'}`} />
-                        </button>
-                      ))}
+                    <div>
+                      <label className="text-xs font-semibold text-primary-700">Étoiles</label>
+                      <div className="mt-2 flex items-center gap-1.5">
+                        {[1, 2, 3, 4, 5].map((value) => (
+                          <button
+                            type="button"
+                            key={value}
+                            onClick={() => setReviewForm((previous) => ({ ...previous, rating: value }))}
+                            className="p-1"
+                            aria-label={`${value} étoile${value > 1 ? 's' : ''}`}
+                          >
+                            <Star className={`w-5 h-5 ${value <= reviewForm.rating ? 'fill-amber-400 text-amber-400' : 'text-primary-300'}`} />
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="text-xs font-semibold text-primary-700">Commentaire</label>
-                  <textarea
-                    value={reviewForm.comment}
-                    onChange={(event) => setReviewForm((previous) => ({
-                      ...previous,
-                      comment: event.target.value,
-                    }))}
-                    rows={3}
-                    maxLength={1000}
-                    placeholder="Partagez ce que vous pensez du logement, du propriétaire ou du service..."
-                    className="mt-1 w-full rounded-xl border border-primary-200 bg-primary-100 px-3 py-2.5 text-sm text-primary-800 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-200 resize-none"
-                  />
-                </div>
+                  <div>
+                    <label className="text-xs font-semibold text-primary-700">Commentaire</label>
+                    <textarea
+                      value={reviewForm.comment}
+                      onChange={(event) => setReviewForm((previous) => ({
+                        ...previous,
+                        comment: event.target.value,
+                      }))}
+                      rows={3}
+                      maxLength={1000}
+                      placeholder="Partagez ce que vous pensez du logement, du propriétaire ou du service..."
+                      className="mt-1 w-full rounded-xl border border-primary-200 bg-primary-100 px-3 py-2.5 text-sm text-primary-800 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-200 resize-none"
+                    />
+                  </div>
 
-                {reviewFormError && (
-                  <p className="text-xs font-medium text-red-500">{reviewFormError}</p>
-                )}
+                  {reviewFormError && (
+                    <p className="text-xs font-medium text-red-500">{reviewFormError}</p>
+                  )}
 
-                <button
-                  type="submit"
-                  disabled={reviewSubmitting}
-                  className="rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 px-4 py-2.5 text-sm font-bold text-primary-50 disabled:opacity-70"
-                >
-                  {reviewSubmitting ? 'Publication...' : user ? 'Publier mon avis' : 'Connectez-vous pour publier un avis'}
-                </button>
-              </form>
+                  <button
+                    type="submit"
+                    disabled={reviewSubmitting}
+                    className="rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 px-4 py-2.5 text-sm font-bold text-primary-50 disabled:opacity-70"
+                  >
+                    {reviewSubmitting ? 'Publication...' : user ? 'Publier mon avis' : 'Connectez-vous pour publier un avis'}
+                  </button>
+                </form>
+              ) : user ? (
+                <p className="mt-4 text-xs text-primary-500">
+                  You must complete a stay at this property to leave a review.
+                </p>
+              ) : null}
 
               <div className="mt-6 space-y-5">
                 {reviewsLoading ? (

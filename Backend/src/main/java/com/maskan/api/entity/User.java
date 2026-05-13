@@ -75,6 +75,9 @@ public class User {
     @Builder.Default
     private String avatar = "";
 
+    @Builder.Default
+    private UserPreferences preferences = new UserPreferences();
+
     private String rejectionReason;
 
     @Builder.Default
