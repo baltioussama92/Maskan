@@ -13,8 +13,9 @@ import HostBookingCard from '../components/bookings/HostBookingCard'
 
 const STATUS_MAP = {
   pending:   { label: 'En attente',  color: 'text-amber-600',   bg: 'bg-amber-50',   icon: Hourglass },
-  awaiting_payment: { label: 'En attente paiement', color: 'text-orange-600', bg: 'bg-orange-50', icon: CreditCard },
-  paid_awaiting_checkin: { label: 'Payée · Check-in requis', color: 'text-sky-700', bg: 'bg-sky-50', icon: UserCheck },
+  awaiting_payment: { label: 'Paiement attendu', color: 'text-orange-600', bg: 'bg-orange-50', icon: CreditCard },
+  awaiting_checkin: { label: 'Check-in requis (cash)', color: 'text-sky-700', bg: 'bg-sky-50', icon: UserCheck },
+  paid_awaiting_checkin: { label: 'Check-in requis (carte)', color: 'text-sky-700', bg: 'bg-sky-50', icon: UserCheck },
   confirmed: { label: 'Confirmée',   color: 'text-emerald-600', bg: 'bg-emerald-50',  icon: CheckCircle2 },
   completed: { label: 'Terminée',    color: 'text-blue-600',    bg: 'bg-blue-50',     icon: CalendarCheck },
   rejected:  { label: 'Refusée',     color: 'text-red-500',     bg: 'bg-red-50',      icon: XCircle },
@@ -25,7 +26,8 @@ const TABS = [
   { key: 'all',       label: 'Toutes' },
   { key: 'pending',   label: 'En attente' },
   { key: 'awaiting_payment', label: 'Paiement attendu' },
-  { key: 'paid_awaiting_checkin', label: 'Check-in QR' },
+  { key: 'awaiting_checkin', label: 'Check-in requis (cash)' },
+  { key: 'paid_awaiting_checkin', label: 'Check-in requis (carte)' },
   { key: 'confirmed', label: 'Confirmées' },
   { key: 'completed', label: 'Terminées' },
   { key: 'rejected',  label: 'Refusées' },
@@ -177,7 +179,12 @@ export default function HostBookingsPage({ user }) {
     )
 
   const pendingCount = bookings.filter(b => b.status === 'pending').length
-  const confirmedCount = bookings.filter(b => b.status === 'confirmed' || b.status === 'awaiting_payment' || b.status === 'paid_awaiting_checkin').length
+  const confirmedCount = bookings.filter(b =>
+    b.status === 'confirmed'
+    || b.status === 'awaiting_payment'
+    || b.status === 'awaiting_checkin'
+    || b.status === 'paid_awaiting_checkin'
+  ).length
   const totalRevenue = bookings.filter(b => b.status === 'completed')
     .reduce((s, b) => s + b.totalPrice, 0)
 

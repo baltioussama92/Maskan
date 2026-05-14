@@ -8,6 +8,7 @@ import com.maskan.api.dto.CheckInVerificationResponse;
 import com.maskan.api.dto.UnavailableDateRangeResponse;
 import com.maskan.api.dto.VerifyCheckInRequest;
 import com.maskan.api.entity.Booking;
+import com.maskan.api.entity.BookingPaymentMethod;
 import com.maskan.api.entity.BookingStatus;
 import com.maskan.api.entity.NotificationType;
 import com.maskan.api.entity.Property;
@@ -31,6 +32,7 @@ import java.util.Comparator;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -63,6 +65,7 @@ public class BookingServiceImpl implements BookingService {
                     BookingStatus.PENDING,
                     BookingStatus.CONFIRMED,
                     BookingStatus.AWAITING_PAYMENT,
+                    BookingStatus.AWAITING_CHECKIN,
                     BookingStatus.PAID_AWAITING_CHECKIN
             )
         );
@@ -75,6 +78,7 @@ public class BookingServiceImpl implements BookingService {
             .guests(request.getGuests() == null || request.getGuests() < 1 ? 1 : request.getGuests())
             .totalPrice(computeTotalPrice(property, request.getCheckInDate(), request.getCheckOutDate(), request.getGuests()))
                 .status(BookingStatus.PENDING)
+                .paymentMethod(request.getPaymentMethod() == null ? BookingPaymentMethod.CARD : request.getPaymentMethod())
                 .build();
 
         Booking saved = bookingRepository.save(booking);
@@ -118,6 +122,7 @@ public class BookingServiceImpl implements BookingService {
                     BookingStatus.PENDING,
                     BookingStatus.CONFIRMED,
                     BookingStatus.AWAITING_PAYMENT,
+                    BookingStatus.AWAITING_CHECKIN,
                     BookingStatus.PAID_AWAITING_CHECKIN
                 )
             );
@@ -125,7 +130,14 @@ public class BookingServiceImpl implements BookingService {
 
         BookingStatus nextStatus = request.getStatus();
         if (nextStatus == BookingStatus.CONFIRMED) {
-            nextStatus = BookingStatus.AWAITING_PAYMENT;
+            if (booking.getPaymentMethod() == BookingPaymentMethod.CASH) {
+                nextStatus = BookingStatus.AWAITING_CHECKIN;
+                if (booking.getCheckInSecretCode() == null || booking.getCheckInSecretCode().isBlank()) {
+                    booking.setCheckInSecretCode(UUID.randomUUID().toString());
+                }
+            } else {
+                nextStatus = BookingStatus.AWAITING_PAYMENT;
+            }
         }
 
         booking.setStatus(nextStatus);
@@ -190,7 +202,8 @@ public class BookingServiceImpl implements BookingService {
             throw new IllegalArgumentException("Not authorized to verify this booking");
         }
 
-        if (booking.getStatus() != BookingStatus.PAID_AWAITING_CHECKIN) {
+        if (booking.getStatus() != BookingStatus.PAID_AWAITING_CHECKIN
+            && booking.getStatus() != BookingStatus.AWAITING_CHECKIN) {
             throw new IllegalArgumentException("Booking is not ready for check-in verification");
         }
 
@@ -201,10 +214,30 @@ public class BookingServiceImpl implements BookingService {
         booking.setStatus(BookingStatus.COMPLETED);
         Booking saved = bookingRepository.save(booking);
 
+        boolean isCash = booking.getPaymentMethod() == BookingPaymentMethod.CASH;
+        String message = isCash
+                ? "Check-in verified successfully. Cash payment recorded."
+                : "Check-in verified successfully. Payout triggered.";
+
+        if (isCash) {
+            notificationService.sendInternalNotification(
+                booking.getGuestId(),
+                "Cash Payment Recorded",
+                "Your cash payment has been confirmed during check-in.",
+                NotificationType.PAYMENT
+            );
+            notificationService.sendInternalNotification(
+                property.getHostId(),
+                "Cash Payment Recorded",
+                "Cash payment received and check-in validated.",
+                NotificationType.PAYMENT
+            );
+        }
+
         return CheckInVerificationResponse.builder()
                 .bookingId(saved.getId())
                 .status(saved.getStatus())
-                .message("Check-in verified successfully. Payout triggered.")
+            .message(message)
                 .build();
     }
 
@@ -258,6 +291,7 @@ public class BookingServiceImpl implements BookingService {
                 BookingStatus.PENDING,
                 BookingStatus.CONFIRMED,
                 BookingStatus.AWAITING_PAYMENT,
+                BookingStatus.AWAITING_CHECKIN,
                 BookingStatus.PAID_AWAITING_CHECKIN
             )
         ).stream()
@@ -308,6 +342,7 @@ public class BookingServiceImpl implements BookingService {
             .guestName(guest != null ? guest.getName() : null)
             .stripePaymentIntentId(booking.getStripePaymentIntentId())
             .checkInSecretCode(includeSecretCode ? booking.getCheckInSecretCode() : null)
+            .paymentMethod(booking.getPaymentMethod())
                 .build();
     }
 
@@ -334,6 +369,7 @@ public class BookingServiceImpl implements BookingService {
             List.of(
                 BookingStatus.CONFIRMED,
                 BookingStatus.AWAITING_PAYMENT,
+                BookingStatus.AWAITING_CHECKIN,
                 BookingStatus.PAID_AWAITING_CHECKIN
             ),
                 LocalDate.now()

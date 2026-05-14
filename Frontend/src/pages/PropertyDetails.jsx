@@ -9,6 +9,7 @@ import {
   ArrowLeft, Heart, Share2, MapPin, Star, Bed, Bath, Maximize2,
   Wifi, Car, Waves, Shield, TreePine, Wind, ChefHat, Building,
   CalendarDays, Users, X, Check, Loader2, ChevronLeft, ChevronRight, AlertTriangle,
+  CreditCard, Banknote,
 } from 'lucide-react'
 import { propertyService } from '../services/propertyService'
 import { bookingService } from '../services/bookingService'
@@ -239,6 +240,7 @@ function BookingSidebar({ property, user, onAuthClick, onRequireVerification, no
   const [checkIn, setCheckIn]   = useState(null)
   const [checkOut, setCheckOut] = useState(null)
   const [guests, setGuests]     = useState(1)
+  const [paymentMethod, setPaymentMethod] = useState('CARD')
   const [loading, setLoading]   = useState(false)
   const [booked, setBooked]     = useState(false)
   const [error, setError]       = useState('')
@@ -336,6 +338,7 @@ function BookingSidebar({ property, user, onAuthClick, onRequireVerification, no
         checkInDate: formatDateForApi(checkIn),
         checkOutDate: formatDateForApi(checkOut),
         guests,
+        paymentMethod,
       })
       setBooked(true)
     } catch (err) {
@@ -465,6 +468,53 @@ function BookingSidebar({ property, user, onAuthClick, onRequireVerification, no
                   <option key={n} value={n}>{n} voyageur{n > 1 ? 's' : ''}</option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          {/* Payment method */}
+          <div className="mb-5">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-primary-500 mb-2 block">Mode de paiement</label>
+            <div className="grid gap-2">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('CARD')}
+                className={`flex items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition ${
+                  paymentMethod === 'CARD'
+                    ? 'border-primary-400 bg-primary-50 shadow-sm'
+                    : 'border-primary-200 bg-primary-100 hover:bg-primary-50'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${paymentMethod === 'CARD' ? 'bg-primary-500 text-white' : 'bg-primary-200 text-primary-600'}`}>
+                    <CreditCard className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="font-semibold text-primary-900">Pay Securely Online (Escrow)</p>
+                    <p className="text-xs text-primary-500">Carte bancaire, paiement sequestre</p>
+                  </div>
+                </div>
+                <span className={`h-3 w-3 rounded-full border ${paymentMethod === 'CARD' ? 'border-primary-500 bg-primary-500' : 'border-primary-300 bg-transparent'}`} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('CASH')}
+                className={`flex items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition ${
+                  paymentMethod === 'CASH'
+                    ? 'border-primary-400 bg-primary-50 shadow-sm'
+                    : 'border-primary-200 bg-primary-100 hover:bg-primary-50'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${paymentMethod === 'CASH' ? 'bg-primary-500 text-white' : 'bg-primary-200 text-primary-600'}`}>
+                    <Banknote className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="font-semibold text-primary-900">Pay Cash on Arrival</p>
+                    <p className="text-xs text-primary-500">Paiement en main propre</p>
+                  </div>
+                </div>
+                <span className={`h-3 w-3 rounded-full border ${paymentMethod === 'CASH' ? 'border-primary-500 bg-primary-500' : 'border-primary-300 bg-transparent'}`} />
+              </button>
             </div>
           </div>
 

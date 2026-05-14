@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Value;
 
 import java.time.LocalDate;
+import com.maskan.api.entity.BookingPaymentMethod;
 
 @Value
 public class BookingRequest {
@@ -22,6 +23,8 @@ public class BookingRequest {
 
     @Min(1)
     Integer guests;
+
+    BookingPaymentMethod paymentMethod;
 
     public String getPropertyId() {
         return listingId;

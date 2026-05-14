@@ -202,17 +202,21 @@ export interface PageResponse<T> {
 export type BookingStatus =
   | 'PENDING'
   | 'AWAITING_PAYMENT'
+  | 'AWAITING_CHECKIN'
   | 'PAID_AWAITING_CHECKIN'
   | 'CONFIRMED'
   | 'CANCELLED'
   | 'REJECTED'
   | 'COMPLETED'
 
+export type BookingPaymentMethod = 'CARD' | 'CASH'
+
 export interface BookingRequest {
   listingId: string
   checkInDate: string
   checkOutDate: string
   guests?: number
+  paymentMethod?: BookingPaymentMethod
 }
 
 export interface BookingResponse {
@@ -238,6 +242,7 @@ export interface BookingResponse {
   guestName?: string
   stripePaymentIntentId?: string
   checkInSecretCode?: string
+  paymentMethod?: BookingPaymentMethod
 }
 
 export interface PaymentCheckoutResponse {

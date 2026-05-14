@@ -7,8 +7,19 @@ import { EmptyState, FilterSelect, MetricCard, SearchField, StatusBadge, Surface
 
 const money = (value: number) => `${value.toLocaleString('fr-TN')} DT`
 
+const BOOKING_STATUS_LABELS: Record<string, string> = {
+  pending: 'En attente',
+  awaiting_payment: 'Paiement attendu',
+  awaiting_checkin: 'Check-in requis (cash)',
+  paid_awaiting_checkin: 'Check-in requis (carte)',
+  confirmed: 'Confirmée',
+  completed: 'Terminée',
+  rejected: 'Refusée',
+  cancelled: 'Annulée',
+}
+
 interface ExtendedBooking extends AdminBooking {
-  paymentStatus: 'paid' | 'pending' | 'refunded'
+  paymentStatus: 'paid' | 'pending' | 'refunded' | 'cash'
   refundRequested: boolean
   cancellationState: 'none' | 'requested' | 'approved'
 }
@@ -31,12 +42,22 @@ export default function Bookings() {
     adminApi.getBookings()
       .then((data) => {
         if (!active) return
-        const mapped: ExtendedBooking[] = data.map((booking, index) => ({
-          ...booking,
-          paymentStatus: booking.status === 'cancelled' ? 'refunded' : booking.status === 'confirmed' ? 'paid' : 'pending',
-          refundRequested: index % 4 === 0,
-          cancellationState: booking.status === 'cancelled' ? 'approved' : index % 5 === 0 ? 'requested' : 'none',
-        }))
+        const mapped: ExtendedBooking[] = data.map((booking, index) => {
+          const status = booking.status
+          const paymentStatus = booking.paymentMethod === 'CASH'
+            ? 'cash'
+            : status === 'cancelled' || status === 'rejected'
+              ? 'refunded'
+              : status === 'paid_awaiting_checkin' || status === 'completed'
+                ? 'paid'
+                : 'pending'
+          return {
+            ...booking,
+            paymentStatus,
+            refundRequested: index % 4 === 0,
+            cancellationState: status === 'cancelled' ? 'approved' : index % 5 === 0 ? 'requested' : 'none',
+          }
+        })
         setBookings(mapped)
       })
       .catch(() => showToast('Failed to load bookings.', 'error'))
@@ -61,7 +82,7 @@ export default function Bookings() {
 
   const stats = {
     total: bookings.length,
-    active: bookings.filter((booking) => booking.status === 'confirmed').length,
+    active: bookings.filter((booking) => ['confirmed', 'awaiting_payment', 'awaiting_checkin', 'paid_awaiting_checkin'].includes(booking.status)).length,
     refunds: bookings.filter((booking) => booking.refundRequested).length,
     cancellations: bookings.filter((booking) => booking.status === 'cancelled').length,
   }
@@ -80,8 +101,14 @@ export default function Bookings() {
       key: 'bookingStatus',
       header: 'Booking Status',
       render: (row) => (
-        <StatusBadge tone={row.status === 'confirmed' ? 'success' : row.status === 'pending' ? 'warning' : 'danger'}>
-          {row.status}
+        <StatusBadge
+          tone={['confirmed', 'completed'].includes(row.status)
+            ? 'success'
+            : ['pending', 'awaiting_payment', 'awaiting_checkin', 'paid_awaiting_checkin'].includes(row.status)
+              ? 'warning'
+              : 'danger'}
+        >
+          {BOOKING_STATUS_LABELS[row.status] || row.status}
         </StatusBadge>
       ),
     },
@@ -89,7 +116,7 @@ export default function Bookings() {
       key: 'paymentStatus',
       header: 'Payment',
       render: (row) => (
-        <StatusBadge tone={row.paymentStatus === 'paid' ? 'success' : row.paymentStatus === 'pending' ? 'warning' : 'info'}>
+        <StatusBadge tone={row.paymentStatus === 'paid' ? 'success' : row.paymentStatus === 'pending' ? 'warning' : row.paymentStatus === 'cash' ? 'info' : 'info'}>
           {row.paymentStatus}
         </StatusBadge>
       ),
@@ -168,9 +195,14 @@ export default function Bookings() {
             onChange={setBookingStatusFilter}
             options={[
               { label: 'All Booking Status', value: 'all' },
-              { label: 'Confirmed', value: 'confirmed' },
-              { label: 'Pending', value: 'pending' },
-              { label: 'Cancelled', value: 'cancelled' },
+              { label: 'En attente', value: 'pending' },
+              { label: 'Paiement attendu', value: 'awaiting_payment' },
+              { label: 'Check-in requis (cash)', value: 'awaiting_checkin' },
+              { label: 'Check-in requis (carte)', value: 'paid_awaiting_checkin' },
+              { label: 'Confirmée', value: 'confirmed' },
+              { label: 'Terminée', value: 'completed' },
+              { label: 'Refusée', value: 'rejected' },
+              { label: 'Annulée', value: 'cancelled' },
             ]}
           />
           <FilterSelect
@@ -179,6 +211,7 @@ export default function Bookings() {
             options={[
               { label: 'All Payment Status', value: 'all' },
               { label: 'Paid', value: 'paid' },
+              { label: 'Cash', value: 'cash' },
               { label: 'Pending', value: 'pending' },
               { label: 'Refunded', value: 'refunded' },
             ]}
@@ -219,6 +252,7 @@ export default function Bookings() {
           <div className="mt-3 grid gap-2 rounded-xl border border-[#E4D4C0] bg-[#FCF7F0] p-3 text-sm text-[#4E3D30]">
             <p><span className="font-semibold">Dates:</span> {detailsTarget.dates}</p>
             <p><span className="font-semibold">Payment:</span> {detailsTarget.paymentStatus}</p>
+            <p><span className="font-semibold">Payment Method:</span> {detailsTarget.paymentMethod || 'CARD'}</p>
             <p><span className="font-semibold">Refund Request:</span> {detailsTarget.refundRequested ? 'Yes' : 'No'}</p>
             <p><span className="font-semibold">Cancellation:</span> {detailsTarget.cancellationState}</p>
             <p><span className="font-semibold">Total:</span> {money(detailsTarget.totalPrice || 220)}</p>

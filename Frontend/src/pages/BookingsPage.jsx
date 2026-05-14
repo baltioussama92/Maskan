@@ -21,15 +21,23 @@ const STATUS_CONFIG = {
     dot: 'bg-emerald-500',
   },
   awaiting_payment: {
-    label: 'Paiement requis',
+    label: 'Paiement attendu',
     icon: CreditCard,
     bg: 'bg-orange-50',
     text: 'text-orange-700',
     border: 'border-orange-200',
     dot: 'bg-orange-500',
   },
+  awaiting_checkin: {
+    label: 'Check-in requis (cash)',
+    icon: CheckCircle2,
+    bg: 'bg-sky-50',
+    text: 'text-sky-700',
+    border: 'border-sky-200',
+    dot: 'bg-sky-500',
+  },
   paid_awaiting_checkin: {
-    label: 'Payée · En attente check-in',
+    label: 'Check-in requis (carte)',
     icon: CheckCircle2,
     bg: 'bg-sky-50',
     text: 'text-sky-700',
@@ -73,8 +81,9 @@ const STATUS_CONFIG = {
 const FILTER_TABS = [
   { value: 'all',       label: 'Toutes'     },
   { value: 'confirmed', label: 'Confirmées' },
-  { value: 'awaiting_payment', label: 'À payer' },
-  { value: 'paid_awaiting_checkin', label: 'En check-in' },
+  { value: 'awaiting_payment', label: 'Paiement attendu' },
+  { value: 'awaiting_checkin', label: 'Check-in requis (cash)' },
+  { value: 'paid_awaiting_checkin', label: 'Check-in requis (carte)' },
   { value: 'pending',   label: 'En attente' },
   { value: 'completed', label: 'Terminées'  },
   { value: 'cancelled', label: 'Annulées'   },
@@ -144,6 +153,7 @@ export default function BookingsPage({ user }) {
           status: (b.status || '').toLowerCase(),
           createdAt: b.createdAt || b.checkInDate,
           checkInSecretCode: b.checkInSecretCode || '',
+          paymentMethod: (b.paymentMethod || 'CARD').toUpperCase(),
           property: property || b.property || { title: 'Propriété', location: 'Non disponible', image: '' },
         }
       }))
@@ -461,7 +471,16 @@ export default function BookingsPage({ user }) {
                             </div>
                           </div>
 
-                          {b.status === 'paid_awaiting_checkin' && (
+                          {b.status === 'awaiting_checkin' && (
+                            <div className="mt-4 rounded-2xl border border-primary-200 bg-primary-50 p-4">
+                              <p className="text-sm font-semibold text-primary-800">Paiement cash a l'arrivee</p>
+                              <p className="text-xs text-primary-600 mt-1">
+                                Please pay {b.totalPrice.toLocaleString('fr-TN')} DT in cash upon arrival.
+                              </p>
+                            </div>
+                          )}
+
+                          {(b.status === 'paid_awaiting_checkin' || b.status === 'awaiting_checkin') && (
                             <GuestCheckInQRCode secretCode={b.checkInSecretCode} />
                           )}
                         </div>

@@ -39,6 +39,9 @@ public class Booking {
     @NotNull
     @Builder.Default
     private BookingStatus status = BookingStatus.PENDING;
+
+    @Builder.Default
+    private BookingPaymentMethod paymentMethod = BookingPaymentMethod.CARD;
     
     @Builder.Default
     private Integer guests = 1;

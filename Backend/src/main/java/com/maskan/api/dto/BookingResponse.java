@@ -1,6 +1,7 @@
 package com.maskan.api.dto;
 
 import com.maskan.api.entity.BookingStatus;
+import com.maskan.api.entity.BookingPaymentMethod;
 import lombok.Builder;
 import lombok.Value;
 
@@ -29,5 +30,6 @@ public class BookingResponse {
     String guestName;
     String stripePaymentIntentId;
     String checkInSecretCode;
+    BookingPaymentMethod paymentMethod;
 }
 

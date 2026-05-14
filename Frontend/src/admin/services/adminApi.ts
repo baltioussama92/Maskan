@@ -57,7 +57,15 @@ export interface ListingDetails extends AdminListing {
   reviews?: number
 }
 
-export type BookingStatus = 'confirmed' | 'pending' | 'cancelled'
+export type BookingStatus =
+  | 'pending'
+  | 'awaiting_payment'
+  | 'awaiting_checkin'
+  | 'paid_awaiting_checkin'
+  | 'confirmed'
+  | 'completed'
+  | 'rejected'
+  | 'cancelled'
 
 export interface AdminBooking {
   id: number
@@ -72,9 +80,10 @@ export interface AdminBooking {
   status: BookingStatus
   totalPrice?: number
   createdAt?: string
+  paymentMethod?: 'CARD' | 'CASH'
 }
 
-export type PaymentStatus = 'paid' | 'pending' | 'failed'
+export type PaymentStatus = 'paid' | 'pending' | 'failed' | 'cash'
 
 export interface AdminPayment {
   id: number
@@ -398,9 +407,25 @@ const mapAdminUserListing = (listing: AdminUserListingResponse): AdminListing =>
 
 const mapBookingStatus = (status: string | undefined): BookingStatus => {
   const normalized = String(status || '').toUpperCase()
-  if (normalized === 'CONFIRMED' || normalized === 'COMPLETED') return 'confirmed'
-  if (normalized === 'CANCELLED' || normalized === 'REJECTED') return 'cancelled'
-  return 'pending'
+  switch (normalized) {
+    case 'AWAITING_PAYMENT':
+      return 'awaiting_payment'
+    case 'AWAITING_CHECKIN':
+      return 'awaiting_checkin'
+    case 'PAID_AWAITING_CHECKIN':
+      return 'paid_awaiting_checkin'
+    case 'CONFIRMED':
+      return 'confirmed'
+    case 'COMPLETED':
+      return 'completed'
+    case 'REJECTED':
+      return 'rejected'
+    case 'CANCELLED':
+      return 'cancelled'
+    case 'PENDING':
+    default:
+      return 'pending'
+  }
 }
 
 const mapBooking = (
@@ -423,6 +448,7 @@ const mapBooking = (
     status: mapBookingStatus(booking.status),
     totalPrice: Number(booking.totalPrice || 0),
     createdAt: String(booking.createdAt || booking.checkInDate || ''),
+    paymentMethod: booking.paymentMethod,
   }
 }
 
@@ -439,12 +465,15 @@ const mapAdminBooking = (booking: AdminUserBookingResponse): AdminBooking => ({
   status: mapBookingStatus(booking.status),
   totalPrice: Number(booking.totalPrice || 0),
   createdAt: String(booking.createdAt || booking.checkInDate || ''),
+  paymentMethod: undefined,
 })
 
-const mapPaymentStatus = (status: string | undefined): PaymentStatus => {
+const mapPaymentStatus = (status: string | undefined, paymentMethod?: string | null): PaymentStatus => {
   const normalized = String(status || '').toUpperCase()
-  if (normalized === 'CONFIRMED' || normalized === 'COMPLETED') return 'paid'
-  if (normalized === 'PENDING') return 'pending'
+  const method = String(paymentMethod || '').toUpperCase()
+  if (method === 'CASH') return 'cash'
+  if (['PAID_AWAITING_CHECKIN', 'COMPLETED'].includes(normalized)) return 'paid'
+  if (['PENDING', 'AWAITING_PAYMENT', 'AWAITING_CHECKIN', 'CONFIRMED'].includes(normalized)) return 'pending'
   return 'failed'
 }
 
@@ -455,7 +484,7 @@ const toPayments = (bookings: BookingResponse[]): AdminPayment[] => (
     user: booking.guestId ? `User #${booking.guestId}` : 'Unknown user',
     userId: toNumberId(booking.guestId),
     amount: Number(booking.totalPrice || 0),
-    status: mapPaymentStatus(booking.status),
+    status: mapPaymentStatus(booking.status, booking.paymentMethod),
     date: booking.createdAt ? String(booking.createdAt).slice(0, 10) : String(booking.checkInDate || ''),
   }))
 )
