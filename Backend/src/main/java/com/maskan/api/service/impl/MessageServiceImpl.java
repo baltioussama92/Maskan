@@ -13,6 +13,7 @@ import com.maskan.api.repository.MessageRepository;
 import com.maskan.api.repository.PropertyRepository;
 import com.maskan.api.repository.UserRepository;
 import com.maskan.api.service.MessageService;
+import com.maskan.api.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,7 @@ public class MessageServiceImpl implements MessageService {
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
     private final PropertyRepository propertyRepository;
+    private final EmailService emailService;
 
         private static final Set<BookingStatus> MESSAGE_ALLOWED_STATUSES = Set.of(
             BookingStatus.AWAITING_PAYMENT,
@@ -56,6 +58,13 @@ public class MessageServiceImpl implements MessageService {
                 .build();
 
         Message saved = messageRepository.save(message);
+        
+        // Send async email notification with message content
+        String senderDisplayName = sender.getName() != null && !sender.getName().isBlank() 
+            ? sender.getName() 
+            : "un utilisateur";
+        emailService.sendNewMessageAlert(receiver.getEmail(), senderDisplayName, request.getContent());
+        
         return toResponse(saved);
     }
 

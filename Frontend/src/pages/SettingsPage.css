@@ -188,6 +188,21 @@
   accent-color: #B8622A;
 }
 
+.email-prefs-note {
+  margin-top: 1rem;
+  padding: 0.85rem;
+  background: linear-gradient(135deg, rgba(184, 98, 42, 0.08) 0%, rgba(212, 168, 118, 0.06) 100%);
+  border-left: 3px solid #B8622A;
+  border-radius: 8px;
+}
+
+.email-prefs-note p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #5A3A20;
+  line-height: 1.5;
+}
+
 @media (max-width: 940px) {
   .settings-grid {
     grid-template-columns: 1fr;

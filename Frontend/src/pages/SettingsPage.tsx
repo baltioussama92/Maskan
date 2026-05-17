@@ -29,6 +29,13 @@ interface NotificationForm {
   productNews: boolean
 }
 
+interface EmailPreferencesForm {
+  securityAlerts: boolean
+  inboxAlerts: boolean
+  supportUpdates: boolean
+  newPropertyListings: boolean
+}
+
 const defaultAccount: AccountForm = {
   fullName: '',
   email: '',
@@ -41,6 +48,13 @@ const defaultNotifications: NotificationForm = {
   bookingUpdates: true,
   marketingEmails: false,
   productNews: true,
+}
+
+const defaultEmailPreferences: EmailPreferencesForm = {
+  securityAlerts: true,
+  inboxAlerts: true,
+  supportUpdates: true,
+  newPropertyListings: true,
 }
 
 const readStoredUser = (): StoredUser | null => {
@@ -62,6 +76,7 @@ const SettingsPage: React.FC = () => {
     email: storedUser?.email || 'demo@maskan.com',
   })
   const [notifications, setNotifications] = useState<NotificationForm>(defaultNotifications)
+  const [emailPreferences, setEmailPreferences] = useState<EmailPreferencesForm>(defaultEmailPreferences)
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -80,6 +95,10 @@ const SettingsPage: React.FC = () => {
 
   const updateNotificationField = (key: keyof NotificationForm) => {
     setNotifications((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const updateEmailPreferenceField = (key: keyof EmailPreferencesForm) => {
+    setEmailPreferences((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
   const handleAccountSave = async (e: React.FormEvent) => {
@@ -277,6 +296,65 @@ const SettingsPage: React.FC = () => {
             </article>
 
             <article className="settings-card">
+              <div className="settings-card-head">
+                <h2>Email Preferences</h2>
+                <span className="settings-badge">Events</span>
+              </div>
+
+              <div className="toggle-list">
+                <label className="toggle-item">
+                  <div>
+                    <strong>🔒 Security Alerts</strong>
+                    <p>Get notified when your password changes.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={emailPreferences.securityAlerts}
+                    onChange={() => updateEmailPreferenceField('securityAlerts')}
+                  />
+                </label>
+
+                <label className="toggle-item">
+                  <div>
+                    <strong>💬 Inbox Alerts</strong>
+                    <p>Receive email when you get a new direct message.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={emailPreferences.inboxAlerts}
+                    onChange={() => updateEmailPreferenceField('inboxAlerts')}
+                  />
+                </label>
+
+                <label className="toggle-item">
+                  <div>
+                    <strong>📋 Support Updates</strong>
+                    <p>Get replies to your support tickets and reports.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={emailPreferences.supportUpdates}
+                    onChange={() => updateEmailPreferenceField('supportUpdates')}
+                  />
+                </label>
+
+                <label className="toggle-item">
+                  <div>
+                    <strong>🏠 New Property Listings</strong>
+                    <p>Stay updated with new properties matching your interests.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={emailPreferences.newPropertyListings}
+                    onChange={() => updateEmailPreferenceField('newPropertyListings')}
+                  />
+                </label>
+              </div>
+
+              <div className="email-prefs-note">
+                <p><em>💡 Tip: Disable any emails you don't want to receive. Your preferences are saved automatically.</em></p>
+              </div>
+            </article>
               <div className="settings-card-head">
                 <h2>Security</h2>
               </div>
