@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.time.Instant;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,6 +56,7 @@ public class MessageServiceImpl implements MessageService {
             .senderId(sender.getId())
             .receiverId(receiver.getId())
                 .content(request.getContent())
+                .createdAt(request.getTimestamp() != null ? request.getTimestamp() : Instant.now())
                 .build();
 
         Message saved = messageRepository.save(message);

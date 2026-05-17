@@ -1,16 +1,30 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { MessageSquare, Send, Search, Loader2, UserPlus, CheckCircle2, MoreVertical } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { messageService } from '../services/messageService'
 import { userService } from '../services/userService'
 import { connectionService } from '../services/connectionService'
 import { bookingService } from '../services/bookingService'
 import { useNotifications } from '../context/NotificationContext'
+import { API_BASE_URL, getStoredAuthToken } from '../api/apiClient'
 
 const formatTime = (value) => {
   if (!value) return ''
-  return new Date(value).toLocaleTimeString('fr-TN', { hour: '2-digit', minute: '2-digit' })
+  return new Date(value).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
 }
+
+const sameId = (left, right) => String(left) === String(right)
+
+const getInitials = (name = '') => {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean)
+  if (!parts.length) return '?'
+  return parts.slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('')
+}
+
+const sortMessages = (items) => [...items].sort(
+  (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),
+)
 
 export default function MessagesPage({ user }) {
   const location = useLocation()
@@ -28,6 +42,9 @@ export default function MessagesPage({ user }) {
   const [conversations, setConversations] = useState([])
   const [bookingContacts, setBookingContacts] = useState([])
   const [seenByConversation, setSeenByConversation] = useState({})
+  const stompClientRef = useRef(null)
+  const [socketReady, setSocketReady] = useState(false)
+  const activeContactRef = useRef(activeContactId)
 
   const currentUserId = String(user?.id || '')
   const seenStorageKey = `messages_seen_${currentUserId}`
@@ -45,6 +62,19 @@ export default function MessagesPage({ user }) {
       return next
     })
   }
+
+  useEffect(() => {
+    activeContactRef.current = activeContactId
+  }, [activeContactId])
+
+  const upsertMessage = useCallback((incomingMessage) => {
+    if (!incomingMessage?.id) return
+    setMessages((prev) => {
+      const map = new Map(prev.map((item) => [String(item.id), item]))
+      map.set(String(incomingMessage.id), incomingMessage)
+      return sortMessages(Array.from(map.values()))
+    })
+  }, [])
 
   // Handle navigation from bookings page
   useEffect(() => {
@@ -84,13 +114,23 @@ export default function MessagesPage({ user }) {
     setPendingRequests(pending)
   }
 
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     const data = await messageService.conversations()
     setConversations(data)
     if (!activeContactId && data.length) {
       setActiveContactId(String(data[0].userId))
     }
-  }
+  }, [activeContactId])
+
+  const loadConversationsRef = useRef(loadConversations)
+
+  useEffect(() => {
+    loadConversationsRef.current = loadConversations
+  }, [loadConversations])
+
+  const refreshConversations = useCallback(() => {
+    loadConversationsRef.current?.().catch(() => {})
+  }, [])
 
   const loadBookingContacts = async () => {
     // Hosts can directly contact guests who booked their properties.
@@ -133,7 +173,7 @@ export default function MessagesPage({ user }) {
     }
 
     const data = await messageService.conversation(contactId)
-    setMessages(data)
+    setMessages(sortMessages(data))
   }
 
   useEffect(() => {
@@ -159,19 +199,78 @@ export default function MessagesPage({ user }) {
 
     load()
 
-    const timer = window.setInterval(() => {
-      if (!active) return
-      loadConversations().catch(() => {})
-      if (activeContactId) {
-        loadActiveConversation(activeContactId).catch(() => {})
-      }
-    }, 5000)
-
     return () => {
       active = false
-      window.clearInterval(timer)
     }
   }, [user])
+
+  useEffect(() => {
+    if (!user?.id) return undefined
+
+    let disposed = false
+    let clientInstance = null
+
+    const startRealtime = async () => {
+      const [{ Client }, sockJsModule] = await Promise.all([
+        import('@stomp/stompjs'),
+        import('sockjs-client'),
+      ])
+
+      const SockJS = sockJsModule.default || sockJsModule
+
+      const token = getStoredAuthToken()
+      const client = new Client({
+        webSocketFactory: () => new SockJS(`${API_BASE_URL}/ws`),
+        reconnectDelay: 4000,
+        connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+        debug: () => {},
+        onConnect: () => {
+          if (disposed) return
+          setSocketReady(true)
+          client.subscribe('/user/queue/chat', (frame) => {
+            try {
+              const incoming = JSON.parse(frame.body)
+              upsertMessage(incoming)
+
+              const peerId = sameId(incoming.senderId, currentUserId)
+                ? String(incoming.receiverId)
+                : String(incoming.senderId)
+
+              if (String(peerId) === String(activeContactRef.current)) {
+                refreshConversations()
+              } else {
+                refreshConversations()
+              }
+            } catch {
+              // ignore malformed frame
+            }
+          })
+        },
+        onWebSocketClose: () => !disposed && setSocketReady(false),
+        onStompError: () => !disposed && setSocketReady(false),
+      })
+
+      if (disposed) {
+        client.deactivate()
+        return
+      }
+
+      clientInstance = client
+      stompClientRef.current = client
+      client.activate()
+    }
+
+    startRealtime().catch(() => {
+      if (!disposed) setSocketReady(false)
+    })
+
+    return () => {
+      disposed = true
+      setSocketReady(false)
+      stompClientRef.current = null
+      clientInstance?.deactivate()
+    }
+  }, [user?.id, currentUserId, refreshConversations, upsertMessage])
 
   useEffect(() => {
     if (!user || !activeContactId) return
@@ -283,10 +382,30 @@ export default function MessagesPage({ user }) {
     if (!content || !activeContactId) return
 
     try {
-      const sent = await messageService.send({ receiverId: activeContactId, content })
-      setMessages((prev) => [...prev, sent])
+      const payload = {
+        senderId: String(user?.id || ''),
+        recipientId: String(activeContactId),
+        content,
+        timestamp: new Date().toISOString(),
+      }
+
+      const client = stompClientRef.current
+      if (client?.connected && socketReady) {
+        client.publish({
+          destination: '/app/chat.sendMessage',
+          body: JSON.stringify(payload),
+        })
+      } else {
+        const sent = await messageService.send({
+          receiverId: activeContactId,
+          content,
+          timestamp: payload.timestamp,
+        })
+        upsertMessage(sent)
+      }
+
       setDraft('')
-      loadConversations().catch(() => {})
+      refreshConversations()
     } catch (error) {
       const message = error?.response?.data?.message || error?.message || 'Envoi impossible.'
       notify(message, 'error')
@@ -494,27 +613,56 @@ export default function MessagesPage({ user }) {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {messages.map((message) => {
-                      const currentUserId = String(user?.id)
-                      const mine = String(message.senderId) === currentUserId
-                      return (
-                        <div key={message.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[85%] md:max-w-[72%] rounded-2xl px-4 py-3 text-sm shadow-sm ${
-                            mine
-                              ? 'bg-primary-500 text-white rounded-br-md'
-                              : 'bg-primary-100 text-primary-900 border border-primary-200 rounded-bl-md'
-                          }`}>
-                            <p className="leading-relaxed">{message.content}</p>
-                            <p className={`text-[11px] mt-1.5 ${mine ? 'text-primary-100' : 'text-primary-500'}`}>
-                              {formatTime(message.createdAt)}
-                            </p>
-                          </div>
-                        </div>
-                      )
-                    })}
-                    <div ref={messagesEndRef} />
-                  </div>
+                  <AnimatePresence initial={false}>
+                    <div className="space-y-4">
+                      {messages.map((message) => {
+                        const currentUser = String(user?.id)
+                        const mine = sameId(message.senderId, currentUser)
+                        const displayName = mine
+                          ? 'Vous'
+                          : (activeContact?.name || 'Invité')
+
+                        return (
+                          <motion.div
+                            key={message.id}
+                            layout
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.22, ease: 'easeOut' }}
+                            className={`group flex items-end gap-3 ${mine ? 'justify-end' : 'justify-start'}`}
+                          >
+                            {!mine && (
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#6F4E37] text-[11px] font-bold text-white shadow-sm">
+                                {getInitials(displayName)}
+                              </div>
+                            )}
+
+                            <div className={`flex max-w-[86%] flex-col ${mine ? 'items-end' : 'items-start'}`}>
+                              <motion.div
+                                whileHover={{ y: -1 }}
+                                className={`group inline-flex flex-col rounded-2xl px-4 py-3 shadow-sm transition-shadow duration-200 ${
+                                  mine
+                                    ? 'rounded-tr-none bg-[#6F4E37] text-white shadow-[#6F4E37]/15'
+                                    : 'rounded-tl-none border border-gray-200 bg-gray-100 text-slate-800 shadow-gray-200/70'
+                                }`}
+                              >
+                                <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+                              </motion.div>
+
+                              <div className={`mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 opacity-70 transition-opacity duration-200 group-hover:opacity-100 ${mine ? 'justify-end' : 'justify-start'}`}>
+                                <span className="font-medium uppercase tracking-[0.18em] opacity-70">
+                                  {displayName}
+                                </span>
+                                <span aria-hidden="true">•</span>
+                                <span className="opacity-70">{formatTime(message.createdAt)}</span>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )
+                      })}
+                      <div ref={messagesEndRef} />
+                    </div>
+                  </AnimatePresence>
                 )}
               </div>
 
@@ -534,6 +682,10 @@ export default function MessagesPage({ user }) {
                   >
                     <Send className="w-4 h-4" /> Envoyer
                   </button>
+                </div>
+                <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+                  <span>{socketReady ? 'Synchronisation en temps réel active' : 'Connexion temps réel en attente'}</span>
+                  <span>{activeContactId ? 'Conversation privée sécurisée' : 'Aucun destinataire sélectionné'}</span>
                 </div>
               </form>
             </section>

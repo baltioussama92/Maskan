@@ -355,34 +355,49 @@ function AppRoutes() {
 
 // -- Root App --------------------------------------------------
 export default function App() {
-  const [isOpening, setIsOpening] = useState(true)
+  const [isOpening, setIsOpening] = useState(() => {
+    try {
+      return sessionStorage.getItem('maskan_loader_seen') !== '1'
+    } catch {
+      return false
+    }
+  })
   const [isOpeningExit, setIsOpeningExit] = useState(false)
 
   useEffect(() => {
+    if (!isOpening) return undefined
+
     const exitTimer = window.setTimeout(() => {
       setIsOpeningExit(true)
-    }, 3000)
+    }, 1200)
 
     const hideTimer = window.setTimeout(() => {
       setIsOpening(false)
-    }, 3600)
+      try {
+        sessionStorage.setItem('maskan_loader_seen', '1')
+      } catch {
+        // ignore session storage errors
+      }
+    }, 1600)
 
     return () => {
       window.clearTimeout(exitTimer)
       window.clearTimeout(hideTimer)
     }
-  }, [])
+  }, [isOpening])
 
   return (
     <AppErrorBoundary>
       <>
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <Watermark />
-          <AppRoutes />
+          <div className="relative z-10">
+            <Watermark />
+            <AppRoutes />
+          </div>
         </BrowserRouter>
 
         {isOpening && (
-          <div className={isOpeningExit ? 'brand-loader-exit' : ''}>
+          <div className={`pointer-events-none fixed inset-0 z-[9998] ${isOpeningExit ? 'brand-loader-exit' : ''}`}>
             <OpeningSplash />
           </div>
         )}

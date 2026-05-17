@@ -296,6 +296,7 @@ export interface ReviewResponse {
 export interface MessageRequest {
   receiverId: string | number
   content: string
+  timestamp?: string
 }
 
 export interface MessageResponse {
