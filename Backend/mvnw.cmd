@@ -1,3 +1,19 @@
+@echo off
+setlocal
+set ROOT_DIR=%~dp0
+set MAVEN_DIR=%ROOT_DIR%.maven\apache-maven-3.9.5
+if not exist "%MAVEN_DIR%\bin\mvn.cmd" (
+  echo Local Maven not found. Running setup script to download it...
+  powershell -ExecutionPolicy Bypass -File "%~dp0scripts\setup-local-maven.ps1"
+)
+
+if exist "%MAVEN_DIR%\bin\mvn.cmd" (
+  "%MAVEN_DIR%\bin\mvn.cmd" %*
+  exit /b %ERRORLEVEL%
+) else (
+  echo Failed to locate local Maven after setup.
+  exit /b 1
+)
 @REM ----------------------------------------------------------------------------
 @REM Licensed to the Apache Software Foundation (ASF) under one
 @REM or more contributor license agreements.  See the NOTICE file

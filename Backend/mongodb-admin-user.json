@@ -1,12 +1,12 @@
 [
   {
-    "name": "Admin Oussama",
-    "email": "adminoussama@houserentail.tn",
-    "password": "$2a$10$fmwC8.ns0ndjShHly86i0OBAdWt0F2fiG59x59h1KnoWHpbGZQwEC",
+    "name": "Admin HouseRental",
+    "email": "admin.houserental@gmail.com",
+    "password": "$2a$10$N.SE5WpQuPMA7Rkya7yfhu6pmbXFUhJNOrBWEuh3lUNpWAME8Gsuu",
     "role": "ADMIN",
     "isVerified": true,
     "banned": false,
     "wishlistListingIds": [],
-    "createdAt": { "$date": "2026-03-30T00:00:00.000Z" }
+    "createdAt": { "$date": "2026-05-17T00:00:00.000Z" }
   }
 ]

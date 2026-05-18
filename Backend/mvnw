@@ -1,4 +1,17 @@
 #!/bin/sh
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+MAVEN_DIR="$ROOT_DIR/.maven/apache-maven-3.9.5"
+if [ ! -x "$MAVEN_DIR/bin/mvn" ]; then
+  echo "Local Maven not found. Running setup script to download it..."
+  powershell -ExecutionPolicy Bypass -File "$ROOT_DIR/scripts/setup-local-maven.ps1"
+fi
+if [ -x "$MAVEN_DIR/bin/mvn" ]; then
+  "$MAVEN_DIR/bin/mvn" "$@"
+else
+  echo "Failed to locate local Maven after setup."
+  exit 1
+fi
+#!/bin/sh
 # ----------------------------------------------------------------------------
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file

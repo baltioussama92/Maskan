@@ -12,11 +12,19 @@ Backend REST API for a house renting platform (Airbnb-like) using Spring Boot, J
 ## Quick Start
 1. Set Java 17 and `JAVA_HOME`.
 2. Ensure MongoDB is running locally.
-3. Run:
+3. Run the Spring Boot app with Maven:
 
 ```bash
-./mvnw spring-boot:run
+mvn org.springframework.boot:spring-boot-maven-plugin:run
 ```
+
+On Windows, if you have a working wrapper, you can also use:
+
+```powershell
+.\mvnw.cmd org.springframework.boot:spring-boot-maven-plugin:run
+```
+
+Do not use `mvn run:springboot`; Maven has no built-in `run` plugin prefix for this project.
 
 ## Default MongoDB Configuration
 From `src/main/resources/application.properties`:
