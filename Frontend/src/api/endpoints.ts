@@ -23,8 +23,8 @@ export const ENDPOINTS = {
     checkout: (bookingId: number | string) => `/payments/checkout/${bookingId}`,
   },
   reviews: {
-    create: '/reviews',
-    listByProperty: (propertyId: number | string) => `/reviews/listing/${propertyId}`,
+    create: (propertyId: number | string) => `/properties/${propertyId}/reviews`,
+    listByProperty: (propertyId: number | string) => `/properties/${propertyId}/reviews`,
     canReview: (propertyId: number | string) => `/reviews/eligibility/${propertyId}`,
   },
   messages: {

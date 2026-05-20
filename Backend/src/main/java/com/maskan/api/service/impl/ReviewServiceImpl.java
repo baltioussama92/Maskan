@@ -1,12 +1,11 @@
 package com.maskan.api.service.impl;
 
-import com.maskan.api.dto.ReviewRequest;
+import com.maskan.api.dto.ReviewDto;
 import com.maskan.api.dto.ReviewResponse;
+import com.maskan.api.entity.BookingStatus;
 import com.maskan.api.entity.Property;
 import com.maskan.api.entity.Review;
-import com.maskan.api.entity.ReviewTargetType;
 import com.maskan.api.entity.User;
-import com.maskan.api.entity.BookingStatus;
 import com.maskan.api.exception.ForbiddenException;
 import com.maskan.api.exception.NotFoundException;
 import com.maskan.api.repository.BookingRepository;
@@ -18,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 @Service
@@ -31,13 +32,16 @@ public class ReviewServiceImpl implements ReviewService {
     private final BookingRepository bookingRepository;
 
     @Override
-    public ReviewResponse createReview(ReviewRequest request, String email) {
-        Property property = propertyRepository.findById(request.getListingId())
-                .orElseThrow(() -> new NotFoundException("Property not found"));
-        User user = getUserByEmail(email);
+    public Review createReview(ReviewDto dto, String currentUserId) {
+        validateRating(dto.getRating());
 
-        if (reviewRepository.existsByListingIdAndGuestId(property.getId(), user.getId())) {
-            throw new IllegalArgumentException("You already reviewed this listing");
+        Property property = propertyRepository.findById(dto.getPropertyId())
+                .orElseThrow(() -> new NotFoundException("Property not found"));
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        if (reviewRepository.existsByPropertyIdAndAuthorId(property.getId(), user.getId())) {
+            throw new IllegalArgumentException("You already reviewed this property");
         }
 
         boolean canReview = canUserReviewProperty(user.getId(), property.getId());
@@ -45,27 +49,23 @@ public class ReviewServiceImpl implements ReviewService {
             throw new ForbiddenException("Only verified guests who completed a stay can review this property");
         }
 
-        ReviewTargetType targetType = request.getTargetType() == null
-                ? ReviewTargetType.HOUSE
-                : request.getTargetType();
-
         Review review = Review.builder()
-            .listingId(property.getId())
-            .guestId(user.getId())
+                .propertyId(property.getId())
                 .authorId(user.getId())
-                .authorRole(user.getRole())
-                .rating(request.getRating())
-                .comment(request.getComment())
-                .targetType(targetType)
+                .authorName(resolveAuthorName(user))
+                .rating(dto.getRating())
+                .comment(dto.getComment())
                 .build();
+
         Review saved = reviewRepository.save(review);
-        return toResponse(saved);
+        recalculatePropertyAverageRating(property.getId());
+        return saved;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ReviewResponse> getReviewsByProperty(String propertyId) {
-        return reviewRepository.findByListingId(propertyId).stream()
+        return reviewRepository.findByPropertyId(propertyId).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -74,29 +74,60 @@ public class ReviewServiceImpl implements ReviewService {
     @Transactional(readOnly = true)
     public boolean canUserReviewProperty(String userId, String propertyId) {
         return bookingRepository.existsByGuestIdAndPropertyIdAndStatus(
-            userId,
-            propertyId,
-            BookingStatus.COMPLETED
+                userId,
+                propertyId,
+                BookingStatus.COMPLETED
         );
+    }
+
+    private void recalculatePropertyAverageRating(String propertyId) {
+        List<Review> reviews = reviewRepository.findByPropertyId(propertyId);
+        if (reviews.isEmpty()) {
+            return;
+        }
+
+        double average = reviews.stream()
+                .mapToInt(Review::getRating)
+                .average()
+                .orElse(0.0);
+        double roundedAverage = BigDecimal.valueOf(average)
+                .setScale(1, RoundingMode.HALF_UP)
+                .doubleValue();
+
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new NotFoundException("Property not found"));
+        property.setAverageRating(roundedAverage);
+        property.setRating(roundedAverage);
+        property.setReviewCount(reviews.size());
+        propertyRepository.save(property);
     }
 
     private ReviewResponse toResponse(Review review) {
         return ReviewResponse.builder()
                 .id(review.getId())
+                .propertyId(review.getPropertyId())
+                .authorId(review.getAuthorId())
+                .authorName(review.getAuthorName())
                 .rating(review.getRating())
                 .comment(review.getComment())
-            .guestId(review.getGuestId())
-            .authorId(review.getAuthorId())
-            .authorRole(review.getAuthorRole())
-            .listingId(review.getListingId())
-            .targetType(review.getTargetType())
-            .createdAt(review.getCreatedAt())
+                .createdAt(review.getCreatedAt())
                 .build();
     }
 
-    private User getUserByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+    private String resolveAuthorName(User user) {
+        if (user.getFullName() != null && !user.getFullName().isBlank()) {
+            return user.getFullName();
+        }
+        if (user.getName() != null && !user.getName().isBlank()) {
+            return user.getName();
+        }
+        return user.getEmail();
+    }
+
+    private void validateRating(Integer rating) {
+        if (rating == null || rating < 1 || rating > 5) {
+            throw new IllegalArgumentException("Rating must be between 1 and 5");
+        }
     }
 }
 

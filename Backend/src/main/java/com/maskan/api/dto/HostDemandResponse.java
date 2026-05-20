@@ -29,4 +29,5 @@ public class HostDemandResponse {
     private String proposedLocation;
     private String bio;
     private String notes;
+    private String message;
 }

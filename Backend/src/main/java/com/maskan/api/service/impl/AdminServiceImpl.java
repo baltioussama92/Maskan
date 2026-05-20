@@ -19,6 +19,8 @@ import com.maskan.api.dto.PropertyResponse;
 import com.maskan.api.dto.UserDto;
 import com.maskan.api.entity.Booking;
 import com.maskan.api.entity.BookingStatus;
+import com.maskan.api.entity.HostVerification;
+import com.maskan.api.entity.HostVerificationStatus;
 import com.maskan.api.entity.Message;
 import com.maskan.api.entity.NotificationType;
 import com.maskan.api.entity.Property;
@@ -27,6 +29,8 @@ import com.maskan.api.entity.User;
 import com.maskan.api.repository.BookingRepository;
 import com.maskan.api.repository.PropertyRepository;
 import com.maskan.api.exception.NotFoundException;
+import com.maskan.api.exception.ResourceNotFoundException;
+import com.maskan.api.repository.HostVerificationRepository;
 import com.maskan.api.repository.MessageRepository;
 import com.maskan.api.repository.UserRepository;
 import com.maskan.api.service.AdminService;
@@ -62,6 +66,7 @@ public class AdminServiceImpl implements AdminService {
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
     private final PropertyRepository propertyRepository;
+    private final HostVerificationRepository hostVerificationRepository;
     private final MessageRepository messageRepository;
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
@@ -572,10 +577,16 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public HostDemandResponse approveHostDemand(String demandId) {
-        User user = getUserById(demandId);
-        if (!isHostDemandCandidate(user)) {
-            throw new NotFoundException("Host demand not found");
-        }
+        HostVerification verification = hostVerificationRepository.findById(demandId)
+                .orElseThrow(() -> new ResourceNotFoundException("Host verification not found"));
+
+        verification.setStatus(HostVerificationStatus.APPROVED);
+        verification.setReviewedAt(Instant.now());
+        verification.setRejectionReason(null);
+
+        String userId = verification.getUserId();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found for host verification"));
 
         user.setRole(Role.HOST);
         user.setIdentityStatus("approved");
@@ -583,6 +594,7 @@ public class AdminServiceImpl implements AdminService {
         user.setIsVerified(Boolean.TRUE);
         user.setRejectionReason(null);
 
+        HostVerification savedVerification = hostVerificationRepository.save(verification);
         User updated = userRepository.save(user);
         notificationService.sendInternalNotification(
             updated.getId(),
@@ -590,20 +602,35 @@ public class AdminServiceImpl implements AdminService {
             "Your host verification has been approved. You can now list properties.",
             NotificationType.KYC
         );
-        return toHostDemandResponse(updated);
+
+        HostDemandResponse response = toHostDemandResponse(updated);
+        response.setId(savedVerification.getId());
+        response.setStatus(savedVerification.getStatus().name().toLowerCase());
+        response.setSubmittedDate(savedVerification.getSubmittedAt() == null ? response.getSubmittedDate() : savedVerification.getSubmittedAt().toString());
+        response.setMessage("Host verification approved successfully. User role updated to HOST. Ask the user to re-login to refresh JWT role claims.");
+        return response;
     }
 
     @Override
     public HostDemandResponse rejectHostDemand(String demandId, String reason) {
-        User user = getUserById(demandId);
-        if (!isHostDemandCandidate(user)) {
-            throw new NotFoundException("Host demand not found");
-        }
+        HostVerification verification = hostVerificationRepository.findById(demandId)
+                .orElseThrow(() -> new ResourceNotFoundException("Host verification not found"));
+
+        verification.setStatus(HostVerificationStatus.REJECTED);
+        verification.setReviewedAt(Instant.now());
+
+        String rejectionReason = (reason == null || reason.isBlank()) ? "Host demand rejected by admin" : reason.trim();
+        verification.setRejectionReason(rejectionReason);
+
+        String userId = verification.getUserId();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found for host verification"));
 
         user.setIdentityStatus("rejected");
         user.setVerificationLevel(Boolean.TRUE.equals(user.getPhoneVerified()) ? 2 : Boolean.TRUE.equals(user.getEmailVerified()) ? 1 : 0);
-        user.setRejectionReason((reason == null || reason.isBlank()) ? "Host demand rejected by admin" : reason.trim());
+        user.setRejectionReason(rejectionReason);
 
+        hostVerificationRepository.save(verification);
         User updated = userRepository.save(user);
         notificationService.sendInternalNotification(
             updated.getId(),

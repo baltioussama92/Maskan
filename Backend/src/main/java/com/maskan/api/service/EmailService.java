@@ -32,36 +32,36 @@ public class EmailService {
         return String.valueOf(code);
     }
 
-    @Async
     public void sendOtpEmail(String recipientEmail, String otpCode) {
-      String normalizedSenderEmail = normalizeEmailValue(senderEmail);
-      if (!StringUtils.hasText(normalizedSenderEmail) || !normalizedSenderEmail.contains("@")) {
-        throw new IllegalArgumentException("Configuration email invalide (spring.mail.username)");
-      }
+        String normalizedSenderEmail = normalizeEmailValue(senderEmail);
+        if (!StringUtils.hasText(normalizedSenderEmail) || !normalizedSenderEmail.contains("@")) {
+            throw new IllegalArgumentException("Configuration email invalide (spring.mail.username)");
+        }
 
         try {
-        MimeMessage message = mailSender.createMimeMessage();
+            MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setTo(recipientEmail);
-        helper.setFrom(normalizedSenderEmail);
+            helper.setFrom(normalizedSenderEmail);
             helper.setSubject("Votre code de vérification Maskan");
             helper.setText(buildOtpHtml(otpCode), true);
-        mailSender.send(message);
-        } catch (MessagingException | MailException exception) {
-        log.error("SMTP delivery failed for recipient {}", recipientEmail, exception);
-        String message = exception.getMessage();
-        throw new EmailDeliveryException(
-            StringUtils.hasText(message)
-                ? "Impossible d'envoyer le code OTP par email: " + message
-                : "Impossible d'envoyer le code OTP par email",
-            exception
-        );
+            mailSender.send(message);
+            log.info("OTP safely dispatched to email: {}", recipientEmail);
+        } catch (MessagingException | RuntimeException exception) {
+            log.error("SMTP CRITICAL FAILURE: Could not send email to {}. Root cause: {}", recipientEmail, exception.getMessage(), exception);
+            exception.printStackTrace();
+            String message = exception.getMessage();
+            throw new EmailDeliveryException(
+                    StringUtils.hasText(message)
+                            ? "Impossible d'envoyer le code OTP par email: " + message
+                            : "Impossible d'envoyer le code OTP par email",
+                    exception
+            );
         }
     }
 
-    @Async
     public void sendOtpHtmlEmail(String recipientEmail, String otpCode) {
-      sendOtpEmail(recipientEmail, otpCode);
+        sendOtpEmail(recipientEmail, otpCode);
     }
 
           private String normalizeEmailValue(String rawEmail) {

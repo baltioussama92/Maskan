@@ -5,6 +5,7 @@ import com.maskan.api.dto.VerificationSummaryResponse;
 import com.maskan.api.dto.VerifyOtpRequest;
 import com.maskan.api.entity.EmailVerificationToken;
 import com.maskan.api.entity.User;
+import com.maskan.api.exception.EmailDeliveryException;
 import com.maskan.api.exception.NotFoundException;
 import com.maskan.api.repository.EmailVerificationTokenRepository;
 import com.maskan.api.repository.UserRepository;
@@ -72,7 +73,19 @@ public class EmailVerificationController {
                     .build();
 
             emailVerificationTokenRepository.save(token);
-            emailService.sendOtpHtmlEmail(targetEmail, otpCode);
+
+            try {
+                emailService.sendOtpHtmlEmail(targetEmail, otpCode);
+            } catch (EmailDeliveryException exception) {
+                emailVerificationTokenRepository.deleteByEmail(targetEmail);
+                System.out.println("[EmailVerification] OTP email delivery failed for " + targetEmail + ": " + exception.getMessage());
+                exception.printStackTrace();
+
+                Map<String, Object> body = new LinkedHashMap<>();
+                body.put("message", "Le serveur de messagerie a échoué à envoyer l'e-mail. Veuillez réessayer.");
+                body.put("email", targetEmail);
+                return ResponseEntity.badRequest().body(body);
+            }
 
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("message", "OTP envoyé avec succès");

@@ -14,6 +14,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -38,6 +39,7 @@ public class SecurityConfig {
                 .requestMatchers("/ws", "/ws/**").permitAll()
                     .requestMatchers("/uploads/**").permitAll()
                     .requestMatchers("/api/listings", "/api/listings/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/properties/*/reviews").permitAll()
                         .requestMatchers("/api/reviews/**").permitAll()
                         .anyRequest().authenticated()
                 )

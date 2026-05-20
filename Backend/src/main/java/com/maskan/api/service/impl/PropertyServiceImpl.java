@@ -247,6 +247,7 @@ public class PropertyServiceImpl implements PropertyService {
             .area(property.getArea())
             .houseRules(property.getHouseRules())
             .amenities(property.getAmenities())
+            .averageRating(property.getAverageRating())
             .rating(property.getRating())
             .reviewCount(property.getReviewCount())
             .pendingApproval(property.getPendingApproval())

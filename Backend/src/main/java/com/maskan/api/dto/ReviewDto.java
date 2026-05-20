@@ -1,15 +1,15 @@
 package com.maskan.api.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Builder;
 import lombok.Value;
 
 @Value
-public class ReviewRequest {
-    @NotBlank
+@Builder(toBuilder = true)
+public class ReviewDto {
     String propertyId;
 
     @NotNull
@@ -19,9 +19,4 @@ public class ReviewRequest {
 
     @Size(max = 1000)
     String comment;
-
-    public String getListingId() {
-        return propertyId;
-    }
 }
-

@@ -1,7 +1,10 @@
 package com.maskan.api.controller;
 
 import com.maskan.api.dto.HostDemandResponse;
+import com.maskan.api.entity.HostVerification;
+import com.maskan.api.entity.HostVerificationStatus;
 import com.maskan.api.entity.User;
+import com.maskan.api.repository.HostVerificationRepository;
 import com.maskan.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -35,6 +38,7 @@ public class HostVerificationController {
     private static final Path VERIFICATION_UPLOAD_ROOT = Paths.get("uploads", "verifications");
 
     private final UserRepository userRepository;
+    private final HostVerificationRepository hostVerificationRepository;
 
     @PostMapping("/host")
     public ResponseEntity<HostDemandResponse> submitHostVerification(
@@ -84,6 +88,20 @@ public class HostVerificationController {
         applyDerivedVerificationLevel(user);
 
         User saved = userRepository.save(user);
+
+        HostVerification hostVerification = hostVerificationRepository.findById(saved.getId())
+            .orElseGet(HostVerification::new);
+        hostVerification.setId(saved.getId());
+        hostVerification.setUserId(saved.getId());
+        hostVerification.setStatus(HostVerificationStatus.PENDING);
+        hostVerification.setGovernmentIdFiles(saved.getGovernmentIdFiles());
+        hostVerification.setSelfieFile(saved.getSelfieFile());
+        hostVerification.setOtherAttachmentFiles(saved.getOtherAttachmentFiles());
+        hostVerification.setSubmittedAt(saved.getIdentitySubmittedAt());
+        hostVerification.setReviewedAt(null);
+        hostVerification.setRejectionReason(null);
+        hostVerificationRepository.save(hostVerification);
+
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(toHostDemandResponse(saved));
     }
 

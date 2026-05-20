@@ -71,6 +71,7 @@ public class Property {
     @Builder.Default
     private List<String> amenities = List.of();
 
+    private Double averageRating;
     private Double rating;
     private Integer reviewCount;
 

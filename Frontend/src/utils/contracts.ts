@@ -177,6 +177,7 @@ export interface PropertyResponse {
   host?: { name: string; avatar: string }
   lat?: number
   lng?: number
+  averageRating?: number
 }
 
 export interface PropertyQuery {
@@ -274,21 +275,18 @@ export interface UnavailableDateRange {
 
 // ── Reviews ──────────────────────────────────────────────────
 export interface ReviewRequest {
-  listingId: string
+  propertyId: string
   rating: number
   comment?: string
-  targetType?: 'HOUSE' | 'OWNER' | 'SERVICE'
 }
 
 export interface ReviewResponse {
   id: string
+  propertyId: string
+  authorId?: string
+  authorName?: string
   rating: number
   comment: string
-  guestId: string
-  authorId?: string
-  authorRole?: 'HOST' | 'GUEST' | 'ADMIN'
-  listingId: string
-  targetType?: 'HOUSE' | 'OWNER' | 'SERVICE'
   createdAt: string
 }
 

@@ -1,7 +1,5 @@
 package com.maskan.api.dto;
 
-import com.maskan.api.entity.ReviewTargetType;
-import com.maskan.api.entity.Role;
 import lombok.Builder;
 import lombok.Value;
 
@@ -11,13 +9,11 @@ import java.time.Instant;
 @Builder
 public class ReviewResponse {
     String id;
-    Integer rating;
-    String comment;
-    String guestId;
+    String propertyId;
     String authorId;
-    Role authorRole;
-    String listingId;
-    ReviewTargetType targetType;
+    String authorName;
+    int rating;
+    String comment;
     Instant createdAt;
 }
 

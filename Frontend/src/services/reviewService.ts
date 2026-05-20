@@ -4,7 +4,7 @@ import type { ReviewRequest, ReviewResponse } from '../utils/contracts'
 
 export const reviewService = {
   async create(payload: ReviewRequest): Promise<ReviewResponse> {
-    const { data } = await apiClient.post<ReviewResponse>(ENDPOINTS.reviews.create, payload)
+    const { data } = await apiClient.post<ReviewResponse>(ENDPOINTS.reviews.create(payload.propertyId), payload)
     return data
   },
 

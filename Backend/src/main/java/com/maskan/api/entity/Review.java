@@ -12,6 +12,7 @@ import lombok.Setter;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.Instant;
 
@@ -28,29 +29,23 @@ public class Review {
 
     @NotNull
     @Indexed
-    private String listingId;
-
-    @NotNull
-    @Indexed
-    private String guestId;
+    @Field("propertyId")
+    private String propertyId;
 
     @NotNull
     @Indexed
     private String authorId;
 
     @NotNull
-    private Role authorRole;
+    private String authorName;
 
     @NotNull
     @Min(1)
     @Max(5)
-    private Integer rating;
+    private int rating;
 
     @Size(max = 1000)
     private String comment;
-
-    @Builder.Default
-    private ReviewTargetType targetType = ReviewTargetType.HOUSE;
 
     @Builder.Default
     private Instant createdAt = Instant.now();

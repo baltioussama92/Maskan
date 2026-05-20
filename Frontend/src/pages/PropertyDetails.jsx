@@ -15,6 +15,7 @@ import { propertyService } from '../services/propertyService'
 import { bookingService } from '../services/bookingService'
 import { wishlistService } from '../services/wishlistService'
 import { reviewService } from '../services/reviewService'
+import ReviewForm from '../components/reviews/ReviewForm'
 import { useNotifications } from '../context/NotificationContext'
 
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY || 'eOof1Hy8rLq0QdXVjQRl'
@@ -51,23 +52,25 @@ function parseHouseRules(houseRules) {
   return normalized.length ? normalized : DEFAULT_HOUSE_RULES
 }
 
-const REVIEW_TARGET_OPTIONS = [
-  { value: 'HOUSE', label: 'Maison' },
-  { value: 'OWNER', label: 'Propriétaire' },
-  { value: 'SERVICE', label: 'Service' },
-]
-
-const REVIEW_TARGET_LABELS = {
-  HOUSE: 'Maison',
-  OWNER: 'Propriétaire',
-  SERVICE: 'Service',
+function normalizePropertyData(data) {
+  return {
+    ...data,
+    price: data.price ?? data.pricePerNight,
+    lat: data.latitude ?? data.lat,
+    lng: data.longitude ?? data.lng,
+    image: data.image ?? (data.images?.length ? data.images[0] : null),
+    currency: data.currency || 'DT',
+    period: data.period || (data.pricePerNight != null ? 'nuit' : 'mois'),
+  }
 }
 
-function normalizeReviewTarget(targetType) {
-  if (targetType === 'OWNER' || targetType === 'SERVICE') {
-    return targetType
-  }
-  return 'HOUSE'
+function getReviewerInitials(name) {
+  return String(name || 'AN')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('') || 'AN'
 }
 
 // ── Amenity icon map ──────────────────────────────────────────
@@ -587,12 +590,6 @@ export default function PropertyDetails({ user, onAuthClick }) {
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [canReview, setCanReview] = useState(false)
-  const [reviewForm, setReviewForm] = useState({
-    rating: 5,
-    targetType: 'HOUSE',
-    comment: '',
-  })
-  const [reviewFormError, setReviewFormError] = useState('')
   const displayLocation = property?.location || property?.address || property?.locationName || property?.city || 'Localisation indisponible'
 
   useEffect(() => {
@@ -601,15 +598,7 @@ export default function PropertyDetails({ user, onAuthClick }) {
     propertyService.getById(id)
       .then(data => {
         if (!active) return
-        setProperty({
-          ...data,
-          price: data.price ?? data.pricePerNight,
-          lat: data.latitude ?? data.lat,
-          lng: data.longitude ?? data.lng,
-          image: data.image ?? (data.images?.length ? data.images[0] : null),
-          currency: data.currency || 'DT',
-          period: data.period || (data.pricePerNight != null ? 'nuit' : 'mois'),
-        })
+        setProperty(normalizePropertyData(data))
       })
       .catch(() => {
         if (!active) return
@@ -691,49 +680,40 @@ export default function PropertyDetails({ user, onAuthClick }) {
     }
   }, [user, property?.id])
 
-  const groupedReviews = useMemo(() => {
-    const base = { HOUSE: [], OWNER: [], SERVICE: [] }
-    reviews.forEach((review) => {
-      const key = normalizeReviewTarget(review?.targetType)
-      base[key].push(review)
+  const sortedReviews = useMemo(() => {
+    return [...reviews].sort((left, right) => {
+      const leftDate = left?.createdAt ? new Date(left.createdAt).getTime() : 0
+      const rightDate = right?.createdAt ? new Date(right.createdAt).getTime() : 0
+      return rightDate - leftDate
     })
-    return base
   }, [reviews])
 
-  const handleReviewSubmit = async (event) => {
-    event.preventDefault()
-
+  const handleReviewSubmit = async ({ rating, comment }) => {
     if (!property?.id) return
     if (!user) {
       onAuthClick?.('login')
       return
     }
 
-    if (!reviewForm.rating || reviewForm.rating < 1 || reviewForm.rating > 5) {
-      setReviewFormError('Veuillez sélectionner une note entre 1 et 5.')
+    if (!rating || rating < 1 || rating > 5) {
       return
     }
 
-    setReviewFormError('')
     setReviewSubmitting(true)
     try {
       await reviewService.create({
-        listingId: String(property.id),
-        rating: reviewForm.rating,
-        comment: reviewForm.comment?.trim() || undefined,
-        targetType: reviewForm.targetType,
+        propertyId: String(property.id),
+        rating,
+        comment: comment?.trim() || undefined,
       })
 
       const updatedReviews = await reviewService.listByProperty(property.id)
       setReviews(Array.isArray(updatedReviews) ? updatedReviews : [])
-      setReviewForm((previous) => ({
-        ...previous,
-        rating: 5,
-        comment: '',
-      }))
+      const refreshedProperty = await propertyService.getById(id)
+      setProperty(normalizePropertyData(refreshedProperty))
       notify?.('Votre avis a été publié.', 'success')
     } catch (error) {
-      setReviewFormError(error?.message || 'Impossible de publier votre avis pour le moment.')
+      throw error
     } finally {
       setReviewSubmitting(false)
     }
@@ -827,10 +807,10 @@ export default function PropertyDetails({ user, onAuthClick }) {
                     <span className="text-sm">{property.location}</span>
                   </div>
                 </div>
-                {property.rating != null && (
+                {(property.averageRating ?? property.rating) != null && (
                   <div className="flex items-center gap-1.5 bg-primary-100 px-3 py-2 rounded-xl shrink-0">
                     <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                    <span className="text-sm font-bold text-primary-900">{property.rating}</span>
+                    <span className="text-sm font-bold text-primary-900">{property.averageRating ?? property.rating}</span>
                     {property.reviewCount != null && (
                       <span className="text-xs text-primary-400">({property.reviewCount} avis)</span>
                     )}
@@ -1022,115 +1002,58 @@ export default function PropertyDetails({ user, onAuthClick }) {
               </p>
 
               {canReview ? (
-                <form onSubmit={handleReviewSubmit} className="mt-4 space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-semibold text-primary-700">Catégorie</label>
-                      <select
-                        value={reviewForm.targetType}
-                        onChange={(event) => setReviewForm((previous) => ({
-                          ...previous,
-                          targetType: event.target.value,
-                        }))}
-                        className="mt-1 w-full rounded-xl border border-primary-200 bg-primary-100 px-3 py-2.5 text-sm text-primary-800 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-200"
-                      >
-                        {REVIEW_TARGET_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>{option.label}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-semibold text-primary-700">Étoiles</label>
-                      <div className="mt-2 flex items-center gap-1.5">
-                        {[1, 2, 3, 4, 5].map((value) => (
-                          <button
-                            type="button"
-                            key={value}
-                            onClick={() => setReviewForm((previous) => ({ ...previous, rating: value }))}
-                            className="p-1"
-                            aria-label={`${value} étoile${value > 1 ? 's' : ''}`}
-                          >
-                            <Star className={`w-5 h-5 ${value <= reviewForm.rating ? 'fill-amber-400 text-amber-400' : 'text-primary-300'}`} />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-primary-700">Commentaire</label>
-                    <textarea
-                      value={reviewForm.comment}
-                      onChange={(event) => setReviewForm((previous) => ({
-                        ...previous,
-                        comment: event.target.value,
-                      }))}
-                      rows={3}
-                      maxLength={1000}
-                      placeholder="Partagez ce que vous pensez du logement, du propriétaire ou du service..."
-                      className="mt-1 w-full rounded-xl border border-primary-200 bg-primary-100 px-3 py-2.5 text-sm text-primary-800 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-200 resize-none"
-                    />
-                  </div>
-
-                  {reviewFormError && (
-                    <p className="text-xs font-medium text-red-500">{reviewFormError}</p>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={reviewSubmitting}
-                    className="rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 px-4 py-2.5 text-sm font-bold text-primary-50 disabled:opacity-70"
-                  >
-                    {reviewSubmitting ? 'Publication...' : user ? 'Publier mon avis' : 'Connectez-vous pour publier un avis'}
-                  </button>
-                </form>
+                <ReviewForm
+                  onSubmitReview={handleReviewSubmit}
+                  submitting={reviewSubmitting}
+                  disabled={!user}
+                  submitLabel={user ? 'Publier mon avis' : 'Connectez-vous pour publier un avis'}
+                  initialRating={5}
+                />
               ) : user ? (
                 <p className="mt-4 text-xs text-primary-500">
                   You must complete a stay at this property to leave a review.
                 </p>
               ) : null}
 
-              <div className="mt-6 space-y-5">
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
                 {reviewsLoading ? (
-                  <div className="flex items-center gap-2 text-sm text-primary-500">
+                  <div className="flex items-center gap-2 text-sm text-primary-500 md:col-span-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Chargement des avis...
                   </div>
                 ) : (
-                  Object.entries(groupedReviews).map(([targetType, targetReviews]) => (
-                    <div key={targetType}>
-                      <h3 className="text-sm font-bold text-primary-800 mb-2">
-                        {REVIEW_TARGET_LABELS[targetType] || 'Maison'}
-                      </h3>
-                      {targetReviews.length === 0 ? (
-                        <p className="text-xs text-primary-500">Aucun commentaire pour cette catégorie.</p>
-                      ) : (
-                        <div className="space-y-2.5">
-                          {targetReviews.map((review) => (
-                            <div key={review.id} className="rounded-xl border border-primary-200 bg-white p-3">
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-1">
-                                  {[1, 2, 3, 4, 5].map((value) => (
-                                    <Star
-                                      key={`${review.id}-${value}`}
-                                      className={`w-4 h-4 ${value <= Number(review.rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-primary-200'}`}
-                                    />
-                                  ))}
-                                </div>
-                                <span className="text-[11px] text-primary-500">
-                                  {review.createdAt ? new Date(review.createdAt).toLocaleDateString('fr-FR') : ''}
-                                </span>
-                              </div>
-                              {review.comment && (
-                                <p className="text-sm text-primary-700 mt-2">{review.comment}</p>
-                              )}
+                  sortedReviews.length === 0 ? (
+                    <p className="text-xs text-primary-500 md:col-span-2">Aucun avis pour le moment.</p>
+                  ) : (
+                    sortedReviews.map((review) => (
+                      <div key={review.id} className="rounded-2xl border border-primary-200 bg-white p-4 shadow-sm">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700">
+                              {getReviewerInitials(review.authorName)}
                             </div>
-                          ))}
+                            <div>
+                              <p className="text-sm font-semibold text-primary-900">{review.authorName || 'Avis anonyme'}</p>
+                              <div className="mt-1 flex items-center gap-0.5">
+                                {[1, 2, 3, 4, 5].map((value) => (
+                                  <Star
+                                    key={`${review.id}-${value}`}
+                                    className={`w-4 h-4 ${value <= Number(review.rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-primary-200'}`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-[11px] text-primary-500">
+                            {review.createdAt ? new Date(review.createdAt).toLocaleDateString('fr-FR') : ''}
+                          </span>
                         </div>
-                      )}
-                    </div>
-                  ))
+                        {review.comment && (
+                          <p className="mt-3 text-sm leading-relaxed text-primary-700">{review.comment}</p>
+                        )}
+                      </div>
+                    ))
+                  )
                 )}
               </div>
             </motion.div>

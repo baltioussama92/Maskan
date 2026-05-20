@@ -29,6 +29,7 @@ public class PropertyResponse {
     Integer area;
     String houseRules;
     List<String> amenities;
+    Double averageRating;
     Double rating;
     Integer reviewCount;
     Boolean pendingApproval;

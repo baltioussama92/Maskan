@@ -21,6 +21,7 @@ public class MailConfig {
             @Value("${spring.mail.properties.mail.smtp.auth:true}") boolean auth,
             @Value("${spring.mail.properties.mail.smtp.starttls.enable:true}") boolean startTls,
             @Value("${spring.mail.properties.mail.smtp.starttls.required:true}") boolean startTlsRequired,
+            @Value("${spring.mail.properties.mail.smtp.ssl.protocols:TLSv1.2 TLSv1.3}") String sslProtocols,
             @Value("${spring.mail.properties.mail.debug:false}") boolean debug,
             @Value("${spring.mail.properties.mail.smtp.connectiontimeout:5000}") String connectionTimeout,
             @Value("${spring.mail.properties.mail.smtp.timeout:5000}") String timeout,
@@ -37,6 +38,7 @@ public class MailConfig {
         properties.put("mail.smtp.auth", String.valueOf(auth));
         properties.put("mail.smtp.starttls.enable", String.valueOf(startTls));
         properties.put("mail.smtp.starttls.required", String.valueOf(startTlsRequired));
+        properties.put("mail.smtp.ssl.protocols", sanitizeText(fallback(sslProtocols, "TLSv1.2 TLSv1.3")));
         properties.put("mail.debug", String.valueOf(debug));
         properties.put("mail.smtp.connectiontimeout", normalizeIntegerProperty(connectionTimeout, 5000));
         properties.put("mail.smtp.timeout", normalizeIntegerProperty(timeout, 5000));
