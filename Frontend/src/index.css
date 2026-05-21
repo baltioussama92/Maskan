@@ -105,19 +105,19 @@ body {
 :root[data-theme='dark'] .border-primary-100 { border-color: #2b1f17; }
 :root[data-theme='dark'] .border-primary-300 { border-color: #4b3527; }
 :root[data-theme='dark'] [class*="bg-white"] {
-  background-color: #0f1720 !important;
+  background-color: #1c140d !important;
 }
 
 :root[data-theme='dark'] [class*="bg-white/"] {
-  background-color: rgba(8,12,18,0.6) !important;
+  background-color: rgba(28, 20, 13, 0.72) !important;
 }
 
 :root[data-theme='dark'] [class*="text-primary-900"] {
-  color: #f8fafc !important;
+  color: #f6efe6 !important;
 }
 
 :root[data-theme='dark'] [class*="border-primary"] {
-  border-color: #24303a !important;
+  border-color: #3a2a1f !important;
 }
 
 :root[data-theme='dark'] input,
@@ -177,6 +177,10 @@ input, select, textarea { font-family: inherit; }
   -webkit-backdrop-filter: blur(6px);
 }
 
+:root[data-theme='dark'] .searchbar-overlay {
+  background: rgba(15, 10, 6, 0.55);
+}
+
 .searchbar-shell {
   position: relative;
   z-index: 30;
@@ -195,6 +199,13 @@ input, select, textarea { font-family: inherit; }
     radial-gradient(circle at 20% 22%, rgba(231, 186, 136, 0.34), transparent 40%),
     radial-gradient(circle at 80% 80%, rgba(161, 77, 34, 0.3), transparent 44%),
     linear-gradient(155deg, #fff8ef 0%, #f5e7d4 44%, #ecd4ba 100%);
+}
+
+:root[data-theme='dark'] .brand-loader {
+  background:
+    radial-gradient(circle at 20% 22%, rgba(212, 138, 78, 0.2), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(90, 58, 32, 0.32), transparent 44%),
+    linear-gradient(155deg, #1d150e 0%, #17110b 44%, #120d08 100%);
 }
 
 .login-loader {
