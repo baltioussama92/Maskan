@@ -230,3 +230,55 @@ Note: Phone OTP endpoints exist under `/api/verifications/guest/phone/*` but are
 - Notifications: `sendInternalNotification`, `markAsRead`, `markAllAsRead`.
 - Verification: `sendOtp`, `verifyOtp`, `submitIdentity`.
 - Messaging: `send`, `conversation`, `conversations`.
+
+## 6. Project inventory, scripts and how to run (practical)
+
+- **Backend:** located in the `Backend/` folder. Uses Maven (wrapper included: `mvnw`, `mvnw.cmd`) and targets Java 17 / Spring Boot 3.2.
+  - Run locally (Windows PowerShell):
+
+    ```powershell
+    .\Backend\mvnw.cmd spring-boot:run
+    ```
+
+  - Or package and run the jar:
+
+    ```powershell
+    .\Backend\mvnw.cmd -DskipTests package
+    java -jar Backend\target\*.jar
+    ```
+
+- **Frontend:** located in the `Frontend/` folder. Uses Node + npm and Vite 5.
+  - Run locally:
+
+    ```bash
+    cd Frontend
+    npm install
+    npm run dev
+    ```
+
+- **Seed data & uploads:** seed scripts and sample data live under `Backend/scripts/` and `Backend/uploads/`. Use `Backend/seed-admin.ps1` to create an admin account and demo data.
+- **Configuration:** backend properties in `Backend/src/main/resources/application.properties`. CORS is configured for typical dev origins used by the frontend.
+- **Tests:** backend unit/integration tests under `Backend/src/test`. Run:
+
+  ```powershell
+  .\Backend\mvnw.cmd test
+  ```
+
+## 7. Notable implementation details and limitations
+
+- **OTP handling:** OTP tokens are stored and compared as strings to preserve leading zeros and avoid conversion errors.
+- **Phone OTP:** phone OTP endpoints exist but are intentionally disabled in the current codebase; a WhatsApp/Twilio sandbox integration is included in the design and can be enabled when credentials are provided.
+- **Payments:** `stripePaymentIntentId` is currently simulated for demo/testing; the code generates a `checkInSecretCode` used by the QR handshake. Integrate a live payment gateway (Stripe) by replacing the simulated payment provider implementation.
+- **File storage:** uploaded files are stored locally under `Backend/uploads/` and are served via `/uploads/**` static mapping in the backend.
+- **WebSocket auth:** STOMP sessions authenticate using the same JWT used by REST calls; message persistence is stored in MongoDB for chat history and auditing.
+- **Seed realism:** seeded data includes Tunisian locations (La Marsa, Les Berges du Lac, Sidi Bou Saïd, Hammamet, Sousse) to support realistic demos.
+
+## 8. Suggested documentation improvements (quick wins)
+
+- Add `README_RUN.md` files to both `Backend/` and `Frontend/` with the commands above, environment variable descriptions, and expected ports.
+- Add a `docker-compose.yml` to orchestrate MongoDB + Backend + Frontend for reproducible demos.
+- Document any environment variables expected by the backend (SMTP, JWT signing key, Twilio credentials, Stripe keys) in a `.env.example` or in the `Backend/README_RUN.md`.
+
+---
+
+Si vous voulez, je peux générer automatiquement le `README_RUN.md` pour chaque service ou créer un `docker-compose.yml` pour lancer une démo complète. Laquelle préférez-vous ?

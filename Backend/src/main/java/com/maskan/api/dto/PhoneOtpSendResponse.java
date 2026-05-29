@@ -8,4 +8,5 @@ import lombok.Getter;
 public class PhoneOtpSendResponse {
 
     private String reqId;
+    private String message;
 }

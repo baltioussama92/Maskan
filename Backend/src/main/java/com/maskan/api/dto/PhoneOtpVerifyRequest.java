@@ -17,6 +17,6 @@ public class PhoneOtpVerifyRequest {
     private String reqId;
 
     @NotBlank
-    @Pattern(regexp = "\\d{4}", message = "OTP code must be exactly 4 digits")
+    @Pattern(regexp = "\\d{6}", message = "OTP code must be exactly 6 digits")
     private String code;
 }

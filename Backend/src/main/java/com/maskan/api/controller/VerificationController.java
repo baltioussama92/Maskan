@@ -8,6 +8,7 @@ import com.maskan.api.dto.VerificationSummaryResponse;
 import com.maskan.api.dto.VerifyOtpRequest;
 import com.maskan.api.entity.User;
 import com.maskan.api.repository.UserRepository;
+import com.maskan.api.service.PhoneVerificationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -42,6 +43,7 @@ public class VerificationController {
     private static final Path VERIFICATION_UPLOAD_ROOT = Paths.get("uploads", "verifications");
 
     private final UserRepository userRepository;
+    private final PhoneVerificationService phoneVerificationService;
 
     @GetMapping("/status")
     public ResponseEntity<VerificationSummaryResponse> getStatus(@AuthenticationPrincipal UserDetails userDetails) {
@@ -72,8 +74,8 @@ public class VerificationController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody PhoneOtpSendRequest request
     ) {
-        getCurrentUser(userDetails);
-        throw new IllegalStateException("Phone OTP verification is currently disabled.");
+        User user = getCurrentUser(userDetails);
+        return ResponseEntity.ok(phoneVerificationService.sendOtp(user, request.getPhoneNumber()));
     }
 
     @PostMapping("/phone/verify-otp")
@@ -81,8 +83,8 @@ public class VerificationController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody PhoneOtpVerifyRequest request
     ) {
-        getCurrentUser(userDetails);
-        throw new IllegalStateException("Phone OTP verification is currently disabled.");
+        User user = getCurrentUser(userDetails);
+        return ResponseEntity.ok(phoneVerificationService.verifyOtp(user, request.getReqId(), request.getCode()));
     }
 
     @PostMapping("/identity")

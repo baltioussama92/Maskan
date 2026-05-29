@@ -1,289 +1,114 @@
 # MASKAN Final Thesis Chapter
 
-## 1. Updated System Architecture & Tech Stack
+## 1. General Introduction and System Architecture
 
-Maskan has been implemented as a **full-stack client-server application** built around a **REST API** and a **stateless authentication model based on JWT**. The system separates the presentation layer from the business layer, which improves maintainability, testability, and deployment flexibility. The frontend communicates with the backend exclusively through HTTP requests, while real-time features are handled through a dedicated WebSocket channel secured with the same JWT-based identity model.
+Maskan is a secure, full-stack real-time property rental marketplace designed for the Tunisian context. The platform addresses the practical needs of digital accommodation discovery, host onboarding, identity verification, booking coordination, and structured communication between guests and hosts. From an architectural perspective, the system was deliberately organized as a multi-layer web application in order to separate concerns, improve maintainability, and support future evolution without destabilizing the existing business logic.
 
-At the architectural level, the solution follows three complementary layers:
+Note: the implementation uses concrete technologies and versions documented in the repository: React 18, Vite 5, Tailwind CSS 3, Java 17, Spring Boot 3.2, MongoDB, and related libraries (JJWT for JWT handling, BCrypt for password hashing, Spring Mail for email, Spring Data MongoDB, Spring WebSocket/STOMP).
 
-- **Presentation layer**: the web client renders the user experience, handles routing, and manages local UI state.
-- **Application layer**: the Spring Boot backend exposes domain services, security rules, booking logic, notification orchestration, and administrative operations.
-- **Persistence layer**: MongoDB stores users, properties, bookings, verifications, notifications, messages, and related documents as native JSON-like records.
+The solution follows a classical three-tier arrangement. The presentation layer is implemented in React and is responsible for the interactive user experience, routing, and responsive rendering. The application layer is implemented in Spring Boot and concentrates all domain services, security decisions, workflow orchestration, and administrative operations. The persistence layer is based on MongoDB and stores heterogeneous domain documents in a form that matches the flexibility required by a marketplace platform.
 
-### Frontend Stack
+### 1.1 Frontend Architecture
 
-The frontend is a modern single-page application built with **React** and **Vite**. The current workspace declares **React 18.3.1** in the package manifest, and the codebase is already structured with the same modern React patterns typically used in React 19-oriented projects, including component-level lazy loading, memoized derived state, and Suspense-based route boundaries.
+The frontend is a single-page application built around reusable components, route-based composition, and context-driven state management. Its architecture is intentionally modular so that authentication, property discovery, booking flows, messaging, notifications, and profile management can evolve independently.
 
-The main frontend technologies are:
+The frontend stack is centered on React, Vite, Tailwind CSS, and Framer Motion. React provides the component-driven user interface, Vite ensures fast local development and efficient bundling, Tailwind CSS establishes a utility-based design system, and Framer Motion is used to deliver premium animations, subtle transitions, and polished page entrances. The frontend also integrates mapping (MapLibre GL + react-map-gl), QR scanning/encoding libraries (used for check-in flows), and an Axios HTTP client configured with authentication interceptors.
 
-- **React** for component-driven UI composition.
-- **Vite** for fast development startup and optimized production bundling.
-- **Tailwind CSS** for utility-first styling.
-- **Framer Motion** for animated page transitions, entrance effects, and polished micro-interactions.
-- **SockJS and STOMP client support** for real-time communication.
-- **Axios** and custom API clients for typed and centralized HTTP access.
+Frontend performance was treated as a design objective: route-level lazy loading, memoization of expensive views, and optimized asset handling keep the UI responsive on large property lists and dashboards.
 
-The UI also includes a dedicated **theme subsystem** that supports both light and dark modes. Theme state is persisted locally and applied globally through the document root, making the interface compatible with dark-mode usage without duplicating component logic.
+### 1.2 Backend Architecture
 
-### Backend Stack
+The backend stack is based on Spring Boot 3.2, Spring Security, Spring Web, Jakarta Validation, Spring Data MongoDB, Spring WebSocket (STOMP), Spring Mail, and asynchronous service execution (@Async). Authentication uses signed JWT tokens (JJWT) and BCrypt for password hashing. Together, these modules support the application’s public APIs, protected endpoints, real-time messaging, verification flows, and notification delivery. The backend was structured around thin controllers and expressive services so that the core business rules remain readable and easy to defend academically.
 
-The backend is based on **Spring Boot 3.2.5** running on **Java 17**. The server-side ecosystem includes:
+Security is stateless: JWTs are validated on every request and are also used to authenticate WebSocket (STOMP) sessions, ensuring a coherent identity model across REST and real-time traffic.
 
-- **Spring Web** for REST endpoints.
-- **Spring Security** for authentication and authorization.
-- **JWT** for stateless bearer-token sessions.
-- **Spring Data MongoDB** for document persistence.
-- **Spring WebSocket** for real-time messaging.
-- **Spring Validation** for request constraints and input integrity.
-- **Spring Mail** for SMTP-based email delivery.
-- **Spring Cache** for targeted read optimization.
+### 1.3 Data Architecture
 
-The backend is organized around a service-oriented design. Controllers are thin, while the main business rules are implemented in service classes such as booking, payment, admin, verification, and notification services. This separation is especially important in a graduation project because it makes the domain logic readable and easier to justify in an architectural defense.
+MongoDB is used as the persistence engine because the project manipulates multiple document categories with different lifecycles: users, properties, bookings, host verification requests, messages, reviews, notifications, and verification tokens. The repository contains seed scripts and example data to populate realistic Tunisian locations for demonstrations.
 
-### Database Stack
+Collections are arranged to reflect domain boundaries and to support selective denormalization (e.g., aggregated rating values stored on property documents for fast reads).
 
-The persistence layer is based on **MongoDB**, which is well aligned with the application domain because Maskan manipulates heterogeneous records: users, listings, bookings, KYC documents, notifications, and chat messages. MongoDB is used not only as a document store, but also as a performance enabler through field indexes and compound indexes on the most frequently queried attributes.
+## 2. Deep-Dive Functional Workflows and Technical Logic
 
-The main collections include:
+### 2.1 Host Verification and KYC Automated Lifecycle
 
-- **users**
-- **properties**
-- **bookings**
-- **host_verifications**
-- **notifications**
-- **messages**
-- **email_verification_tokens**
+The host verification workflow is one of the most important administrative processes in Maskan because it governs who can publish properties and act as a host. The implementation follows a controlled KYC-style lifecycle in which the user first submits verification evidence and the administrator later validates the request.
 
-### Security Model
+When a user submits a host verification request, the backend stores the uploaded documents under `Backend/uploads/verifications/<userId>/`, records the request in the `host_verifications` collection, and marks the user identity state as pending. The approval phase is handled by an administrator action that atomically updates the verification status and the user's role.
 
-Authentication is fully **stateless**. After login, the client stores a JWT and sends it as a Bearer token on each API request. The backend validates the token on every call, reconstructs the user identity, and authorizes access based on the embedded role and the current security context. This design avoids server-side session storage and supports horizontal scalability.
+Implementation note: email OTP endpoints and multipart identity upload endpoints are implemented; phone OTP endpoints exist but are currently disabled in the backend and return a controlled error response. The design includes an omnichannel WhatsApp/Twilio sandbox integration for phone-based OTP delivery when enabled.
 
-For WebSocket connections, the client also sends the JWT in the STOMP connection headers. The server authenticates the socket session during the CONNECT phase, which keeps real-time messaging aligned with the same identity rules as the REST API.
+### 2.2 Double-Payment and Check-in Handshake Workflow
 
----
+The booking lifecycle in Maskan is intentionally designed as a transactional pipeline rather than a simple reservation record. The platform supports a CARD flow (online payment, escrow-like intent stored) and a CASH flow (reservation without immediate online settlement). Both converge at the check-in handshake which is validated using a `checkInSecretCode` (QR or code exchange).
 
-## 2. Core Workflows & Logic Specification
+Typical implemented lifecycle: `PENDING -> CONFIRMED -> AWAITING_PAYMENT -> PAID_AWAITING_CHECKIN -> COMPLETED` (terminal states include `CANCELLED` and `REJECTED`). For demo purposes the `stripePaymentIntentId` is simulated in code; replacing with a live payment gateway is straightforward given the stored intent abstraction.
 
-### 2.1 The Double-Payment & Handshake Workflow
+### 2.3 Real-Time WebSocket Messaging Pipeline
 
-This workflow is the most critical transactional path in the platform because it links payment, check-in verification, booking finalization, and payout readiness.
+The messaging subsystem uses Spring WebSocket + STOMP to enable persistent bidirectional connections and low-latency communication. Messages are persisted to MongoDB for history and audit. JWT authentication is re-used to authenticate socket sessions and enforce permissions.
 
-#### A. Booking creation phase
+### 2.4 Omnichannel WhatsApp Verification Gateway
 
-1. The guest submits a booking request with check-in and check-out dates, number of guests, and a payment method.
-2. The backend validates that the check-out date is strictly after the check-in date.
-3. The system loads the target property and resolves the authenticated guest.
-4. The booking engine checks that the guest does not already have an active confirmed booking that conflicts with the requested period.
-5. The system checks whether the property is already reserved for overlapping dates in one of the blocking statuses: **PENDING**, **CONFIRMED**, **AWAITING_PAYMENT**, **AWAITING_CHECKIN**, or **PAID_AWAITING_CHECKIN**.
-6. A new booking record is created with status **PENDING**.
-7. If no payment method is explicitly provided, the booking defaults to **CARD**.
-8. The booking is stored in MongoDB and an internal notification is sent to the host to inform them that a new request has arrived.
+Phone verification is designed to use WhatsApp (Twilio sandbox) to deliver OTPs efficiently in the Tunisian market (+216). This reduces SMS costs and leverages a channel widely adopted by target users.
 
-#### B. Host decision phase
+### 2.5 Event-Driven Notification Engine
 
-1. The host or administrator reviews the booking.
-2. When the host confirms the booking, the system branches according to the payment method.
+Maskan persists internal notification records and sends HTML email notifications asynchronously using Spring Mail. Email dispatch is decoupled from request threads via `@Async` so that API responsiveness is not impacted by external mail latency.
 
-#### C. CARD flow
+### 2.6 Interactive Review and Star Rating System
 
-1. If the booking is marked for **CARD**, the host confirmation changes the booking state to **AWAITING_PAYMENT**.
-2. The guest is then redirected to the payment checkout process.
-3. During checkout, the payment service generates a simulated Stripe-like payment intent identifier and a **checkInSecretCode**.
-4. The booking is persisted with status **PAID_AWAITING_CHECKIN**.
-5. The response returned to the client contains the booking identifier, the generated payment intent, and the QR secret code.
+Review creation updates property aggregates (average rating and review count) eagerly to enable O(1) display of ratings on property cards and lists. This design optimizes read-heavy exploration pages at the cost of slightly more expensive writes, which is appropriate for the application's access patterns.
 
-#### D. CASH flow
+## 3. Technical Optimizations and Database Engineering
 
-1. If the booking is marked for **CASH**, host confirmation does not require online payment.
-2. The booking state is moved directly to **AWAITING_CHECKIN**.
-3. If the booking does not yet have a secret check-in code, the backend generates one.
-4. The code is used later as the digital proof that the guest physically arrived and that the host validated the stay.
+### 3.1 Performance Architecture
 
-#### E. Check-in handshake phase
+Indexes are applied to common query fields (location coordinates, price ranges, availability, host ownership, booking state) to ensure scalable discovery performance. Frontend lazy loading, route splitting, and memoization complement database indexing to deliver a smooth UX.
 
-1. At check-in time, the host scans or receives the guest’s QR code value, which corresponds to the **checkInSecretCode**.
-2. The backend verifies that the booking is eligible for handover, meaning that the booking must be in either **AWAITING_CHECKIN** or **PAID_AWAITING_CHECKIN**.
-3. The server compares the submitted secret with the stored one.
-4. If the secret matches, the booking state is updated to **COMPLETED**.
-5. This transition acts as the final immutable receipt of the stay.
+### 3.2 Robustness and Validation
 
-#### F. Database impact
+OTP tokens are treated as strings to preserve leading zeros. Inputs are sanitized and validated early to prevent malformed data from reaching backend flows.
 
-The workflow mutates the following booking fields in MongoDB:
+### 3.3 Seeded Production Data
 
-- **status**: transitions from PENDING to AWAITING_PAYMENT, AWAITING_CHECKIN, PAID_AWAITING_CHECKIN, and finally COMPLETED.
-- **stripePaymentIntentId**: set for paid bookings.
-- **checkInSecretCode**: set at payment time or, for cash bookings, at confirmation time when needed.
+Seed scripts and sample data provide realistic Tunisian locations (La Marsa, Les Berges du Lac, Sidi Bou Saïd, Hammamet, Sousse) to support demonstrations and jury evaluation. See `Backend/scripts/` and helper PowerShell `seed-admin.ps1`.
 
-The important architectural point is that the **checkInSecretCode** behaves as the digital handshake token. It is not a cosmetic field: it is the concrete proof used to close the lifecycle of the booking.
+## 4. Implementation Conclusion and Next Steps
 
-### 2.2 The Host KYC Automated Upgrade
+Maskan was developed as a complete full-stack platform that combines secure authentication, marketplace discovery, host onboarding, verification workflows, messaging, booking lifecycle management, notifications, and database optimization. From a methodological point of view, the implementation relied on a layered architecture, domain-driven service decomposition, stateless security, asynchronous event handling, and document-oriented persistence.
 
-The host verification process is designed as a two-document lifecycle: one document captures the uploaded evidence, while the other reflects the user’s identity and role state.
+Future work could extend Maskan with automated financial ledgers for advanced reconciliation, machine-learning-based recommendation, reputation scoring, fraud detection, and richer analytics dashboards. These evolutions would build naturally on the current architecture.
 
-#### A. Submission phase
+## 5. Project inventory, scripts and how to run (practical)
 
-1. The authenticated user submits identity documents and ownership proof through the host verification endpoint.
-2. The backend stores the uploaded files under a user-specific path in the local upload directory.
-3. The user record is updated to mark the identity status as **pending**.
-4. The system creates or updates a **HostVerification** document.
-5. In this implementation, the verification document reuses the user identifier as its own document identifier, which keeps the administration workflow aligned with the user lifecycle.
+- **Backend:** `Backend/` — Maven wrapper included (`mvnw`, `mvnw.cmd`). Java 17 / Spring Boot 3.2.
+  - Run: `./mvnw spring-boot:run` (Linux/macOS) or `mvnw.cmd spring-boot:run` (Windows).
+  - Tests: `./mvnw test`.
+- **Frontend:** `Frontend/` — Node + npm, Vite 5.
+  - `cd Frontend`
+  - `npm install`
+  - `npm run dev`
+- **Seeds & uploads:** `Backend/scripts/`, `Backend/uploads/`, `seed-admin.ps1` exist to create demo data and an admin account.
+- **Configuration:** Backend properties in `src/main/resources/application.properties` (and `target/classes/application.properties` after build). CORS is configured for local dev origins used by the frontend.
 
-#### B. Administrative approval phase
+## 6. Notable implementation details and limitations
 
-1. The administrator opens the host demand list.
-2. The backend loads the corresponding host verification document from the **host_verifications** collection.
-3. The verification status is changed to **APPROVED**.
-4. The associated user record is loaded from the **users** collection.
-5. The user role is promoted from **GUEST** to **HOST**.
-6. The user identity status becomes **approved**.
-7. The verification level is raised to the highest level used by the application.
-8. The verification and user documents are saved.
-9. An internal notification is sent to the user to confirm the approval.
+- OTP values stored as strings (no integer coercion).
+- Phone OTP endpoints are present but disabled in current code; WhatsApp/Twilio integration is the designed channel.
+- Payment intents are simulated for demos (`stripePaymentIntentId` placeholder). Replace with Stripe SDK for production.
+- Uploaded files are stored locally under `Backend/uploads/` and served via `/uploads/**`.
 
-#### C. Operational meaning
+## 7. Small editorial and documentation updates made
 
-This workflow is not only a back-office moderation feature. It is a role upgrade pipeline. The business effect is that an approved guest becomes capable of publishing properties, participating as a host, and accessing host-specific dashboards and workflows.
-
-#### D. Database impact
-
-The approval operation writes to two MongoDB documents in a coordinated manner:
-
-- **HostVerification.status** becomes APPROVED.
-- **HostVerification.reviewedAt** is timestamped.
-- **User.role** becomes HOST.
-- **User.identityStatus** becomes approved.
-- **User.verificationLevel** becomes 3.
-- **User.isVerified** becomes true.
-
-The backend also emits a message reminding that the user should log in again so the JWT role claims can be refreshed. This is a realistic detail for a stateless authentication system, because role changes do not automatically rewrite already-issued tokens.
-
-### 2.3 The Event-Driven Notification Engine
-
-Maskan uses an application-level notification engine that combines **internal notifications** stored in MongoDB and **external HTML emails** sent asynchronously. The result is a system that is responsive for the end user and still rich enough to support operational alerts.
-
-#### A. Internal notifications
-
-1. Domain services call the notification service when significant business events occur.
-2. The notification service writes a notification document into MongoDB.
-3. Notifications are later retrieved by the recipient through the notification API.
-4. Users can mark notifications as read individually or in bulk.
-
-Typical triggers include:
-
-- new booking request,
-- booking accepted or rejected,
-- payment confirmation,
-- password reset or password change alert,
-- KYC approval or rejection,
-- administrative updates.
-
-#### B. Email notifications
-
-1. For security-sensitive or user-facing events, the backend also sends HTML emails.
-2. Email delivery is delegated to methods annotated with **@Async**.
-3. The controller thread returns immediately, without waiting for SMTP to finish.
-4. The email content is rendered as HTML, which allows branded, readable, and mobile-friendly notification messages.
-
-#### C. Why this design matters
-
-This architecture protects API responsiveness. The HTTP response does not remain blocked while SMTP sends the message. In practice, this means that the application can deliver alerts for security, messaging, support, and platform updates without introducing unnecessary latency in the critical request path.
-
-#### D. Database and runtime impact
-
-- MongoDB persists notification records for traceability and in-app retrieval.
-- The mail subsystem sends rich HTML emails for external reach.
-- The asynchronous boundary isolates slow I/O from the domain transaction.
+- Added explicit technology versions and key libraries used.
+- Documented practical run instructions and seed utilities.
+- Noted implemented booking state machine and demo payment behaviour.
 
 ---
 
-## 3. Technical Optimizations & Quality Assurance
+Si vous souhaitez, je peux:
+- ajouter un `README_RUN.md` par service avec commandes détaillées,
+- ou bien créer un `docker-compose.yml` pour monter MongoDB + backend + frontend pour une démo reproductible.
 
-### Performance
-
-Several engineering decisions were introduced to ensure production-level responsiveness.
-
-#### MongoDB indexing
-
-The data model applies indexes on high-frequency search and filter fields. This is especially important for property discovery and booking management, where the system frequently filters by location, price, availability, host, and booking status.
-
-Examples of indexed attributes include:
-
-- **Property.location**
-- **Property.pricePerNight**
-- **Property.available**
-- **Property.type**
-- **Property.bedrooms**
-- **Booking.listingId**
-- **Booking.guestId**
-- **Booking.checkInDate**
-- **Booking.checkOutDate**
-- **Booking.status**
-
-Compound indexes further improve the performance of booking overlap detection and guest booking retrieval. This is particularly important in a rental marketplace because date conflicts are one of the most expensive consistency checks in the system.
-
-#### React rendering optimization
-
-On the frontend, route-based **lazy loading** is used extensively. Less frequently visited pages are loaded only when needed, which reduces the initial bundle cost and improves first paint behavior.
-
-The UI also uses **useMemo** and **useCallback** in contexts and data-heavy pages to stabilize derived values and avoid unnecessary recomputation. This is especially visible in list filtering, theme handling, notification handling, and administrative dashboards.
-
-In the property browsing experience, paginated loading and client-side normalization keep the browsing flow lightweight while preserving a responsive interface.
-
-### Data Integrity & UX
-
-#### Robust phone number sanitization
-
-The registration modal normalizes Tunisian phone numbers by removing spaces and enforcing the international **+216** prefix. The user input is validated before submission with a strict regular expression. This prevents inconsistent phone formatting across profiles, verification flows, and host onboarding.
-
-At the profile-verification level, the phone verification modal also trims the value and restricts OTP submission to a numeric four-digit format.
-
-#### Strict String-based OTP handling
-
-OTP values are handled as **strings**, not integers. This choice is deliberate and important. Treating OTPs as strings avoids the accidental loss of leading zeros and eliminates parsing-related anomalies that can otherwise surface as **400 Bad Request** errors.
-
-The backend validates the OTP using request-level constraints and exact string comparison against the stored verification token.
-
-#### Comprehensive global error handling
-
-A centralized **@ControllerAdvice** class standardizes API errors into predictable JSON responses. This improves frontend reliability and makes the system easier to test and document.
-
-The handler covers:
-
-- validation failures,
-- illegal arguments,
-- authentication errors,
-- authorization errors,
-- not found cases,
-- email delivery failures,
-- file upload overflow,
-- unexpected server exceptions.
-
-This layer is essential in a final-year project because it transforms raw exceptions into a consistent, defense-ready contract between the client and the API.
-
-### Additional QA characteristics
-
-- Request payloads are validated with Jakarta validation annotations.
-- Sensitive actions are guarded by role checks.
-- The booking and KYC flows are protected against inconsistent state transitions.
-- The frontend includes a reusable error boundary to prevent a single runtime failure from collapsing the whole application.
-- The theme system persists user preference and adapts the layout for dark mode automatically.
-
----
-
-## 4. Implementation Conclusion & Deployment Summary
-
-Maskan now stands as a complete **property rental marketplace** tailored to a Tunisian usage context, with a coherent booking lifecycle, secured authentication, real-time communication, administrative moderation, KYC validation, and user-facing notifications. The platform demonstrates the key qualities expected from a production-oriented system: modularity, traceable state transitions, secure access control, and a user experience that remains stable in both light and dark modes.
-
-From an engineering perspective, the project achieves the following outcomes:
-
-- a **functional** end-to-end rental workflow,
-- a **secure** JWT-based authentication layer,
-- a **real-time** messaging and notification layer,
-- a **production-oriented** MongoDB schema with indexing,
-- a **responsive** frontend optimized with lazy loading and memoized state,
-- a **maintainable** separation between controllers, services, and persistence.
-
-The final seed dataset further validates the platform’s readiness by using realistic market references in Tunisia, including **Les Berges du Lac 2**, **Sidi Bou Saïd**, **Hammamet Nord**, and **Port El Kantaoui, Sousse**. These locations are not synthetic placeholders: they provide a credible spatial and economic context for testing search, pricing, booking conflicts, and geographic discovery.
-
-In conclusion, the final version of Maskan is not merely a prototype. It is a coherent digital marketplace that integrates business rules, administrative governance, and user experience into a single deployable solution. For a graduation defense, this implementation can be presented as a complete case study of full-stack architecture, domain-driven workflow design, and practical software hardening.
+Lequel préférez-vous pour la prochaine étape ?

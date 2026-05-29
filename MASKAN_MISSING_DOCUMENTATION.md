@@ -1,0 +1,44 @@
+## 1. CORE DATABASE ENTITIES & SCHEMAS (Java Models)
+- **User Entity:** `id` (String), `name` (String), `username` (String), `phone` (String), `bio` (String), `city` (String), `email` (String), `password` (String), `role` (Role Enum: ADMIN, HOST, GUEST), `createdAt` (Instant), `isVerified` (Boolean), `banned` (Boolean), `wishlistListingIds` (List<String>), `emailVerified` (Boolean), `phoneVerified` (Boolean), `identityStatus` (String), `verificationLevel` (Integer), `avatar` (String), `preferences` (UserPreferences), `rejectionReason` (String), `governmentIdFiles` (List<String>), `otherAttachmentFiles` (List<String>), `selfieFile` (String), `identitySubmittedAt` (Instant).
+- **UserPreferences (embedded):** `language` (String), `currency` (String), `notifications` (NotificationPreferences), `privacy` (PrivacyPreferences).
+- **UserPreferences.NotificationPreferences (embedded):** `bookings` (Boolean), `messages` (Boolean), `marketing` (Boolean), `news` (Boolean).
+- **UserPreferences.PrivacyPreferences (embedded):** `showProfile` (Boolean), `showActivity` (Boolean), `allowMessages` (Boolean).
+- **Property Entity:** `id` (String), `title` (String), `description` (String), `location` (String), `latitude` (Double), `longitude` (Double), `pricePerNight` (BigDecimal), `currency` (String), `images` (List<String>), `hostId` (String), `createdAt` (Instant), `available` (Boolean), `type` (String), `badge` (String), `bedrooms` (Integer), `bathrooms` (Integer), `area` (Integer), `houseRules` (String), `amenities` (List<String>), `averageRating` (Double), `rating` (Double), `reviewCount` (Integer), `pendingApproval` (Boolean).
+- **Booking Entity:** `id` (String), `listingId` (String), `guestId` (String), `checkInDate` (LocalDate), `checkOutDate` (LocalDate), `status` (BookingStatus Enum: PENDING, AWAITING_PAYMENT, AWAITING_CHECKIN, PAID_AWAITING_CHECKIN, CONFIRMED, CANCELLED, REJECTED, COMPLETED), `paymentMethod` (BookingPaymentMethod Enum: CARD, CASH), `guests` (Integer), `createdAt` (Instant), `totalPrice` (BigDecimal), `stripePaymentIntentId` (String), `checkInSecretCode` (String).
+- **PaymentMethod Entity:** `id` (String), `userId` (String), `cardholderName` (String), `brand` (String), `last4` (String), `expMonth` (Integer), `expYear` (Integer), `isDefault` (Boolean), `createdAt` (Instant).
+- **Review Entity:** `id` (String), `propertyId` (String), `authorId` (String), `authorName` (String), `rating` (int), `comment` (String), `createdAt` (Instant).
+- **ReviewTargetType Enum:** `HOUSE`, `OWNER`, `SERVICE`.
+- **Message Entity:** `id` (String), `senderId` (String), `receiverId` (String), `content` (String), `createdAt` (Instant).
+- **Notification Entity:** `id` (String), `recipientId` (String), `title` (String), `message` (String), `type` (NotificationType Enum: BOOKING, SYSTEM, KYC, PAYMENT), `isRead` (Boolean), `createdAt` (LocalDateTime).
+- **ConnectionRequest Entity:** `id` (String), `requesterId` (String), `receiverId` (String), `status` (ConnectionStatus Enum: PENDING, ACCEPTED, REJECTED), `createdAt` (Instant), `respondedAt` (Instant).
+- **EmailVerificationToken Entity:** `id` (String), `email` (String), `otpCode` (String), `expiryDate` (Instant).
+- **HostVerification Entity:** `id` (String), `userId` (String), `status` (HostVerificationStatus Enum: PENDING, APPROVED, REJECTED), `governmentIdFiles` (List<String>), `otherAttachmentFiles` (List<String>), `selfieFile` (String), `submittedAt` (Instant), `reviewedAt` (Instant), `rejectionReason` (String).
+- **SupportTicket Entity:** `id` (String), `requesterId` (String), `subject` (String), `priority` (String), `status` (String), `assigneeId` (String), `createdAt` (Instant), `updatedAt` (Instant), `messages` (List<MessageEntry>).
+- **SupportTicket.MessageEntry (embedded):** `id` (String), `senderId` (String), `content` (String), `createdAt` (Instant), `internal` (boolean), `metadata` (Map<String, Object>).
+- **AdminReport Entity:** `id` (String), `createdAt` (Instant), `reporterId` (String), `targetType` (String), `targetId` (String), `reason` (String), `severity` (String), `status` (String), `evidence` (List<String>), `internalNotes` (List<InternalNote>), `decision` (Decision), `actedBy` (String), `actedAt` (Instant), `actionReason` (String), `metadata` (Map<String, Object>).
+- **AdminReport.InternalNote (embedded):** `id` (String), `author` (String), `note` (String), `createdAt` (Instant).
+- **AdminReport.Decision (embedded):** `action` (String), `actor` (String), `actedAt` (Instant), `metadata` (Map<String, Object>).
+- **AdminChatModerationAction Entity:** `id` (String), `conversationId` (String), `action` (String), `status` (String), `severity` (String), `reason` (String), `actedBy` (String), `actedAt` (Instant), `participants` (List<String>), `flaggedMessageIds` (List<String>), `metadata` (Map<String, Object>).
+- **AdminSettings Entity:** `id` (String), `commissionPercentage` (Double), `currency` (String), `language` (String), `emailNotifications` (Boolean), `inAppNotifications` (Boolean), `enableSmartPricing` (Boolean), `enableNewHostOnboarding` (Boolean), `maintenanceMode` (Boolean), `branding` (Map<String, Object>), `emailConfig` (Map<String, Object>), `updatedAt` (Instant).
+- **AdminContent Entity:** `id` (String), `homeBanner` (Map<String, Object>), `faq` (Map<String, Object>), `terms` (String), `privacyPolicy` (String), `footerContact` (Map<String, Object>), `updatedAt` (Instant).
+- **AdminNotificationTemplate Entity:** `id` (String), `name` (String), `channel` (String), `subject` (String), `body` (String), `active` (Boolean), `createdAt` (Instant), `updatedAt` (Instant).
+- **AdminNotificationHistory Entity:** `id` (String), `type` (String), `channel` (String), `subject` (String), `body` (String), `status` (String), `createdAt` (Instant), `scheduledAt` (Instant), `sentAt` (Instant), `actedBy` (String), `metadata` (Map<String, Object>).
+
+## 2. DETAILED BACK-OFFICE / ADMIN CAPABILITIES
+- **User governance:** list all users; ban or block users (toggle `banned`); update user profile data; update user password; delete users; view user permissions.
+- **User monitoring & audit:** per-user overview (counts and spend/earnings), history timeline, message history, listings list, bookings list (filter by role), earnings summary.
+- **Listings & bookings oversight:** list all bookings (paged); list pending listings and verify properties (remove `pendingApproval`); view pending host listings and approve/reject.
+- **KYC / verification moderation:** approve or reject guest identity verification; review host verification demands (host KYC) by status, open demand details, approve/reject with reason.
+- **Reports & disputes:** list reports; view report detail; update report status (open, investigating, resolved, closed); apply actions (warn, suspend, ban, refund, close_case) with internal notes and metadata.
+- **Chat moderation:** list flagged conversations; view flagged conversation detail; create moderation actions (mute, warn, suspend, ban) with severity and reason; moderation actions are stored as admin records.
+- **Support ticket handling:** list support tickets; view ticket detail; patch tickets with actions (assign, escalate, resolve, close) and assignee; add internal or external ticket messages.
+- **Finance tooling:** finance summary (gross revenue, payouts, platform fees, booking counts); payouts list; refunds list; payment history; invoice download; finance export (csv or pdf).
+- **Analytics dashboards:** revenue trend, booking trend, user growth, top cities by bookings, conversion rate, most active hosts, complaint category distribution.
+- **Platform settings & content:** read/update global settings (commission, currency, language, notifications, maintenance, branding, email config); read/update CMS-like content (home banner, FAQ, terms, privacy policy, footer contact).
+- **Admin notifications:** list notification templates; send immediate notifications; schedule notifications; view notification history.
+
+## 3. GEOLOCATION & MAP INTEGRATION SPECIFICATION
+- **Backend storage model:** properties store `location` as a plain String plus optional `latitude` and `longitude` as Double fields; no GeoJSON types or geospatial indexes are used in the entity model.
+- **Backend search behavior:** property search uses a case-insensitive regex on `location` and does not perform geospatial distance queries.
+- **Frontend map stack:** MapLibre GL is used via `react-map-gl/maplibre` with MapTiler style JSON; hosts pick a point by clicking or dragging the marker on the map.
+- **Coordinate flow on create:** `AddPropertyPage` captures `event.lngLat` to set `latitude`/`longitude`, then posts these numeric fields in the property creation payload to `/listings` alongside `location` and other listing details.
