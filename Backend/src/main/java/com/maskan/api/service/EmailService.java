@@ -21,8 +21,8 @@ public class EmailService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
-  @Autowired
-  private JavaMailSender mailSender;
+        @Autowired
+        private JavaMailSender mailSender;
 
     @Value("${spring.mail.username}")
     private String senderEmail;
@@ -47,9 +47,8 @@ public class EmailService {
             helper.setText(buildOtpHtml(otpCode), true);
             mailSender.send(message);
             log.info("OTP safely dispatched to email: {}", recipientEmail);
-        } catch (MessagingException | RuntimeException exception) {
+        } catch (MessagingException | MailException exception) {
             log.error("SMTP CRITICAL FAILURE: Could not send email to {}. Root cause: {}", recipientEmail, exception.getMessage(), exception);
-            exception.printStackTrace();
             String message = exception.getMessage();
             throw new EmailDeliveryException(
                     StringUtils.hasText(message)

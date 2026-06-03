@@ -34,9 +34,9 @@ export default function EmailVerificationModal({
       setIsLoading(true)
       setError('')
       setSuccess('')
-      await guestVerificationService.sendEmailOtp(email)
+      const response = await guestVerificationService.sendEmailOtp(email)
       setStep(2)
-      setSuccess('Code envoyé avec succès. Vérifiez votre boîte mail.')
+      setSuccess(response?.message || 'Code envoyé avec succès. Vérifiez votre boîte mail.')
     } catch (err) {
       setError(err.message || 'Impossible d’envoyer le code.')
     } finally {

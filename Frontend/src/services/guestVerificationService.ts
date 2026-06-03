@@ -21,6 +21,12 @@ interface SendPhoneOtpResponse {
   reqId: string
 }
 
+interface SendEmailOtpResponse {
+  message?: string
+  email?: string
+  otp?: string
+}
+
 interface IdentitySubmissionPayload {
   governmentIds: File[]
   otherAttachments?: File[]
@@ -118,7 +124,7 @@ export const guestVerificationService = {
     return normalizeSummary(payload)
   },
 
-  async sendEmailOtp(userEmail: string): Promise<void> {
+  async sendEmailOtp(userEmail: string): Promise<SendEmailOtpResponse> {
     const normalizedEmail = typeof userEmail === 'string'
       ? userEmail.trim().toLowerCase()
       : ''
@@ -154,6 +160,17 @@ export const guestVerificationService = {
         throw new Error(parsedMessage)
       }
       throw new Error(errorBody || 'Verification request failed')
+    }
+
+    const responseText = await response.text()
+    if (!responseText) {
+      return {}
+    }
+
+    try {
+      return JSON.parse(responseText) as SendEmailOtpResponse
+    } catch {
+      return { message: responseText }
     }
   },
 
