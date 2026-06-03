@@ -8,6 +8,7 @@ import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+<<<<<<< HEAD
     <LanguageProvider>
       <ThemeProvider>
         <NotificationProvider>
@@ -15,5 +16,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         </NotificationProvider>
       </ThemeProvider>
     </LanguageProvider>
+=======
+    <ThemeProvider>
+      <LanguageProvider>
+        <NotificationProvider>
+          <App />
+        </NotificationProvider>
+      </LanguageProvider>
+    </ThemeProvider>
+>>>>>>> parent of 8e1c170 (remove dark mode)
   </React.StrictMode>,
 )

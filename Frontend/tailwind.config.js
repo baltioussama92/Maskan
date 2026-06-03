@@ -1,7 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  // Dark mode removed: disable Tailwind dark variants
-  darkMode: false,
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
