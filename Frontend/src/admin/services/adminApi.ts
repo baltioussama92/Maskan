@@ -568,18 +568,19 @@ export const adminApi = {
       fetchPendingListings(),
     ])
 
-    const pendingIds = new Set(pendingListings.map((entry) => toNumberId(entry.id)))
+    // Use backend string IDs when deduplicating to avoid numeric coercion of Mongo ObjectIds
+    const pendingIds = new Set(pendingListings.map((entry) => String(entry.id)))
     const merged = [...(allListingsResponse.data.content || []), ...pendingListings]
-    const uniqById = new Map<number, PropertyResponse>()
+    const uniqById = new Map<string, PropertyResponse>()
 
     merged.forEach((entry) => {
-      uniqById.set(toNumberId(entry.id), entry)
+      uniqById.set(String(entry.id), entry)
     })
 
     const mapped = Array.from(uniqById.values()).map((listing) => {
-      const id = toNumberId(listing.id)
+      const idKey = String(listing.id)
       const hasPendingApproval = Boolean((listing as PropertyResponse & { pendingApproval?: boolean }).pendingApproval)
-      return mapListing(listing, pendingIds.has(id) || hasPendingApproval)
+      return mapListing(listing, pendingIds.has(idKey) || hasPendingApproval)
     })
     return ensureUniqueIds(mapped)
   },
