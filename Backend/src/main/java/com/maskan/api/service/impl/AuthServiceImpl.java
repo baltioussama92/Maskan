@@ -7,8 +7,14 @@ import com.maskan.api.dto.UserDto;
 import com.maskan.api.entity.Role;
 import com.maskan.api.entity.User;
 import com.maskan.api.repository.UserRepository;
+import com.maskan.api.repository.EmailVerificationTokenRepository;
 import com.maskan.api.security.JwtService;
 import com.maskan.api.service.AuthService;
+import com.maskan.api.service.EmailService;
+import com.maskan.api.entity.EmailVerificationToken;
+import com.maskan.api.exception.EmailDeliveryException;
+import com.maskan.api.dto.VerifyPasswordOtpRequest;
+import com.maskan.api.dto.ResetPasswordRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,6 +34,8 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final EmailService emailService;
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
 
     @Override
         public AuthResponse register(RegisterRequest request) {
@@ -125,6 +133,89 @@ public class AuthServiceImpl implements AuthService {
                                 .selfieFile(user.getSelfieFile())
                                 .identitySubmittedAt(user.getIdentitySubmittedAt())
                 .build();
+    }
+
+    @Override
+    public void forgotPassword(String email) {
+        String normalizedEmail = email == null ? "" : email.trim().toLowerCase();
+        
+        if (!userRepository.existsByEmail(normalizedEmail)) {
+            // We throw an exception that the controller can catch and turn into a 404
+            throw new IllegalArgumentException("Account not found");
+        }
+
+        emailVerificationTokenRepository.deleteByEmail(normalizedEmail);
+
+        String otpCode = emailService.generateOtpCode();
+        // 15 minutes expiry to match standard
+        Instant expiryDate = Instant.now().plusSeconds(15 * 60);
+
+        EmailVerificationToken token = EmailVerificationToken.builder()
+                .email(normalizedEmail)
+                .otpCode(otpCode)
+                .expiryDate(expiryDate)
+                .build();
+
+        emailVerificationTokenRepository.save(token);
+
+        try {
+            emailService.sendOtpEmail(normalizedEmail, otpCode);
+        } catch (EmailDeliveryException exception) {
+            emailVerificationTokenRepository.deleteByEmail(normalizedEmail);
+            throw new RuntimeException("Failed to send OTP email: " + exception.getMessage(), exception);
+        }
+    }
+
+    @Override
+    public boolean verifyPasswordOtp(VerifyPasswordOtpRequest request) {
+        String normalizedEmail = request.getEmail() == null ? "" : request.getEmail().trim().toLowerCase();
+        
+        EmailVerificationToken token = emailVerificationTokenRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired OTP"));
+
+        if (token.getExpiryDate().isBefore(Instant.now())) {
+            emailVerificationTokenRepository.delete(token);
+            throw new IllegalArgumentException("OTP has expired");
+        }
+
+        if (!token.getOtpCode().equals(request.getOtpCode())) {
+            throw new IllegalArgumentException("Invalid OTP code");
+        }
+
+        return true;
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordRequest request) {
+        String normalizedEmail = request.getEmail() == null ? "" : request.getEmail().trim().toLowerCase();
+        
+        // Re-verify the OTP just to be safe
+        EmailVerificationToken token = emailVerificationTokenRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired OTP"));
+
+        if (token.getExpiryDate().isBefore(Instant.now())) {
+            emailVerificationTokenRepository.delete(token);
+            throw new IllegalArgumentException("OTP has expired");
+        }
+
+        if (!token.getOtpCode().equals(request.getOtpCode())) {
+            throw new IllegalArgumentException("Invalid OTP code");
+        }
+
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        emailVerificationTokenRepository.delete(token);
+        
+        // Optional: Send password changed alert
+        try {
+            emailService.sendPasswordChangedAlert(normalizedEmail);
+        } catch (Exception e) {
+            // Non-critical, ignore
+        }
     }
 }
 

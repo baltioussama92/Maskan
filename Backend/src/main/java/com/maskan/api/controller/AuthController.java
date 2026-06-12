@@ -4,6 +4,9 @@ import com.maskan.api.dto.AuthResponse;
 import com.maskan.api.dto.LoginRequest;
 import com.maskan.api.dto.RegisterRequest;
 import com.maskan.api.dto.UserDto;
+import com.maskan.api.dto.ForgotPasswordRequest;
+import com.maskan.api.dto.VerifyPasswordOtpRequest;
+import com.maskan.api.dto.ResetPasswordRequest;
 import com.maskan.api.entity.EmailVerificationToken;
 import com.maskan.api.repository.EmailVerificationTokenRepository;
 import com.maskan.api.service.AuthService;
@@ -81,6 +84,38 @@ public class AuthController {
 
     private String normalizeEmail(String email) {
         return email == null ? "" : email.trim().toLowerCase();
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        try {
+            authService.forgotPassword(request.getEmail());
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyPasswordOtpRequest request) {
+        try {
+            authService.verifyPasswordOtp(request);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        try {
+            authService.resetPassword(request);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 }
 
