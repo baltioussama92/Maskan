@@ -152,15 +152,11 @@ function PropertyCard({
 
         {/* Footer: rating + type */}
         <div className="flex items-center justify-between pt-3 border-t border-primary-200">
-          {p.rating != null && (
-            <div className="flex items-center gap-1">
-              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-              <span className="text-xs font-semibold text-primary-800">{p.rating}</span>
-              {p.reviewCount != null && (
-                <span className="text-[10px] text-primary-400">({p.reviewCount})</span>
-              )}
-            </div>
-          )}
+          <div className="flex items-center gap-1">
+            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+            <span className="text-xs font-semibold text-primary-800">{p.averageRating ?? p.rating ?? 0}</span>
+            <span className="text-[10px] text-primary-400">({p.reviewCount ?? 0})</span>
+          </div>
           {p.type && (
             <span className="text-[10px] font-medium text-primary-500 bg-primary-50 px-2 py-0.5 rounded-full">
               {p.type}

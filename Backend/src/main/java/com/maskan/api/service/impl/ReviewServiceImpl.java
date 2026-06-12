@@ -45,8 +45,8 @@ public class ReviewServiceImpl implements ReviewService {
             throw new ForbiddenException("Only verified guests who completed a stay or paid can review this property");
         }
 
-        if (reviewRepository.existsByReservationId(reservationId)) {
-            throw new IllegalArgumentException("You already reviewed this reservation");
+        if (reviewRepository.existsByPropertyIdAndUserId(property.getId(), user.getId())) {
+            throw new IllegalArgumentException("You already reviewed this property");
         }
 
         Review review = Review.builder()
