@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AlertTriangle, CheckCheck, CircleDollarSign, Clock3, Headset, ShieldAlert, TrendingUp, UserRound } from 'lucide-react'
 import Table, { type TableColumn } from '../components/Table'
-import { useAdminToast } from '../components/AdminLayout'
 import { adminApi, type ActivityRow, type DashboardStats } from '../services/adminApi'
 import { MetricCard, MiniBarChart, MiniLineChart, SectionTabs, SurfaceCard } from '../components/ui'
 import { apiClient } from '../../api/apiClient'
@@ -27,7 +26,6 @@ type DashboardPanel = 'overview' | 'analytics'
 export default function Dashboard() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const { showToast } = useAdminToast()
 
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<DashboardStats | null>(null)
@@ -45,59 +43,33 @@ export default function Dashboard() {
   useEffect(() => {
     let active = true
 
-    Promise.all([
+    Promise.allSettled([
       adminApi.getDashboardStats(),
       adminApi.getRecentActivity(),
-      apiClient.get<any[]>(ENDPOINTS.admin.analyticsRevenueTrend),
-      apiClient.get<any[]>(ENDPOINTS.admin.analyticsBookingTrend),
-      apiClient.get<any[]>(ENDPOINTS.admin.analyticsUserGrowth),
-      apiClient.get<any[]>(ENDPOINTS.admin.analyticsTopCities),
       apiClient.get<any[]>(ENDPOINTS.admin.supportTickets),
       apiClient.get<any[]>(ENDPOINTS.admin.reports),
       adminApi.getHostDemands(),
     ])
-      .then(([
-        nextStats,
-        nextActivity,
-        revenueTrendResponse,
-        bookingTrendResponse,
-        growthTrendResponse,
-        topCitiesResponse,
-        supportTicketsResponse,
-        reportsResponse,
-        hostDemands,
-      ]) => {
+      .then((results) => {
         if (!active) return
-        setStats(nextStats)
-        setActivity(nextActivity)
+        const [statsResult, activityResult, supportTicketsResult, reportsResult, hostDemandsResult] = results
 
-        const revenueRows = revenueTrendResponse.data || []
-        const bookingRows = bookingTrendResponse.data || []
-        const growthRows = growthTrendResponse.data || []
-        const topCitiesRows = topCitiesResponse.data || []
-
-        if (revenueRows.length > 0) {
-          setRevenueTrend(revenueRows.map((row) => Number(row?.earnings || row?.revenue || row?.value || 0)))
+        if (statsResult.status === 'fulfilled') {
+          setStats(statsResult.value)
         }
-        if (bookingRows.length > 0) {
-          setBookingTrend(bookingRows.map((row) => Number(row?.bookingsCount || row?.count || row?.value || 0)))
+        if (activityResult.status === 'fulfilled') {
+          setActivity(activityResult.value)
         }
-        if (growthRows.length > 0) {
-          setGrowthTrend(growthRows.map((row) => Number(row?.count || row?.users || row?.value || 0)))
+        if (supportTicketsResult.status === 'fulfilled') {
+          setSupportTicketCount((supportTicketsResult.value.data || []).length)
         }
-        if (topCitiesRows.length > 0) {
-          setCityRows(topCitiesRows.map((row) => ({
-            city: String(row?.city || row?.name || 'Unknown'),
-            bookings: Number(row?.bookings || row?.count || 0),
-            growth: `${String(row?.growth || row?.delta || 0).startsWith('+') ? '' : '+'}${String(row?.growth || row?.delta || 0)}%`,
-          })))
+        if (reportsResult.status === 'fulfilled') {
+          setDisputeCount((reportsResult.value.data || []).filter((report) => String(report?.targetType || '').toLowerCase() === 'user').length)
         }
-
-        setSupportTicketCount((supportTicketsResponse.data || []).length)
-        setDisputeCount((reportsResponse.data || []).filter((report) => String(report?.targetType || '').toLowerCase() === 'user').length)
-        setPendingVerificationCount(hostDemands.filter((demand) => demand.status === 'pending').length)
+        if (hostDemandsResult.status === 'fulfilled') {
+          setPendingVerificationCount(hostDemandsResult.value.filter((demand) => demand.status === 'pending').length)
+        }
       })
-      .catch(() => showToast('Failed to load dashboard data.', 'error'))
       .finally(() => {
         if (active) setLoading(false)
       })
@@ -105,7 +77,63 @@ export default function Dashboard() {
     return () => {
       active = false
     }
-  }, [showToast])
+  }, [])
+
+  useEffect(() => {
+    if (panel !== 'analytics') {
+      return
+    }
+
+    let active = true
+
+    Promise.allSettled([
+      apiClient.get<any[]>(ENDPOINTS.admin.analyticsRevenueTrend),
+      apiClient.get<any[]>(ENDPOINTS.admin.analyticsBookingTrend),
+      apiClient.get<any[]>(ENDPOINTS.admin.analyticsUserGrowth),
+      apiClient.get<any[]>(ENDPOINTS.admin.analyticsTopCities),
+    ])
+      .then((results) => {
+        if (!active) return
+
+        const [revenueTrendResult, bookingTrendResult, growthTrendResult, topCitiesResult] = results
+
+        if (revenueTrendResult.status === 'fulfilled') {
+          const revenueRows = revenueTrendResult.value.data || []
+          if (revenueRows.length > 0) {
+            setRevenueTrend(revenueRows.map((row) => Number(row?.earnings || row?.revenue || row?.value || 0)))
+          }
+        }
+
+        if (bookingTrendResult.status === 'fulfilled') {
+          const bookingRows = bookingTrendResult.value.data || []
+          if (bookingRows.length > 0) {
+            setBookingTrend(bookingRows.map((row) => Number(row?.bookingsCount || row?.count || row?.value || 0)))
+          }
+        }
+
+        if (growthTrendResult.status === 'fulfilled') {
+          const growthRows = growthTrendResult.value.data || []
+          if (growthRows.length > 0) {
+            setGrowthTrend(growthRows.map((row) => Number(row?.count || row?.users || row?.value || 0)))
+          }
+        }
+
+        if (topCitiesResult.status === 'fulfilled') {
+          const topCitiesRows = topCitiesResult.value.data || []
+          if (topCitiesRows.length > 0) {
+            setCityRows(topCitiesRows.map((row) => ({
+              city: String(row?.city || row?.name || 'Unknown'),
+              bookings: Number(row?.bookings || row?.count || 0),
+              growth: `${String(row?.growth || row?.delta || 0).startsWith('+') ? '' : '+'}${String(row?.growth || row?.delta || 0)}%`,
+            })))
+          }
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [panel])
 
   const cards = useMemo(() => {
     const baseUsers = stats?.totalUsers || 0

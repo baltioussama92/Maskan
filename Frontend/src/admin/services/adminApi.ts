@@ -759,10 +759,18 @@ export const adminApi = {
   },
 
   async getDashboardStats(): Promise<DashboardStats> {
-    const [summaryResponse, payments] = await Promise.all([
+    const [summaryResult, paymentsResult] = await Promise.allSettled([
       apiClient.get<AdminSummaryResponse>(ENDPOINTS.dashboard.adminSummary),
       this.getPayments(),
     ])
+
+    const summaryResponse = summaryResult.status === 'fulfilled'
+      ? summaryResult.value
+      : { data: {} as AdminSummaryResponse, status: 200 }
+
+    const payments = paymentsResult.status === 'fulfilled'
+      ? paymentsResult.value
+      : []
 
     const revenue = payments
       .filter((payment) => payment.status === 'paid')
@@ -777,11 +785,15 @@ export const adminApi = {
   },
 
   async getRecentActivity(): Promise<ActivityRow[]> {
-    const [pendingListings, bookings, users] = await Promise.all([
+    const [pendingListingsResult, bookingsResult, usersResult] = await Promise.allSettled([
       fetchPendingListings(),
       fetchAdminBookings(),
       this.getUsers(),
     ])
+
+    const pendingListings = pendingListingsResult.status === 'fulfilled' ? pendingListingsResult.value : []
+    const bookings = bookingsResult.status === 'fulfilled' ? bookingsResult.value : []
+    const users = usersResult.status === 'fulfilled' ? usersResult.value : []
 
     const items: ActivityRow[] = []
 
