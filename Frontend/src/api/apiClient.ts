@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080').replace(/\/$/, '')
+export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 export const AUTH_TOKEN_KEY = 'authToken'
 const USER_STORAGE_KEY = 'user'
 const ROLE_STORAGE_KEY = 'userRole'
