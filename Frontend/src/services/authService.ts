@@ -37,4 +37,20 @@ export const authService = {
     }
     return data
   },
+
+  /**
+   * Called after an admin approves a host demand.
+   * Refreshes the user's role from the server and updates localStorage,
+   * so the approved user sees their HOST privileges without a full re-login.
+   * The JWT itself does not embed a role claim (only the email subject),
+   * so the backend always re-reads the role from MongoDB on each request.
+   * The only stale state is in the frontend localStorage cache.
+   */
+  async refreshUserSession(): Promise<UserDto | null> {
+    try {
+      return await this.getCurrentUser()
+    } catch {
+      return null
+    }
+  },
 }

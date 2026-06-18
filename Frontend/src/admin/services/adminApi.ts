@@ -412,6 +412,7 @@ const mapBookingStatus = (status: string | undefined): BookingStatus => {
     case 'PAID_AWAITING_CHECKIN':
       return 'paid_awaiting_checkin'
     case 'CONFIRMED':
+    case 'ACCEPTED': // Legacy DB value — treat as confirmed
       return 'confirmed'
     case 'COMPLETED':
       return 'completed'
@@ -487,9 +488,14 @@ const toPayments = (bookings: BookingResponse[]): AdminPayment[] => (
 )
 
 async function fetchAdminBookings(): Promise<BookingResponse[]> {
-  const { data } = await apiClient.get<PageResponse<BookingResponse>>(ENDPOINTS.admin.bookings)
+  // Pass explicit page/size to avoid 400 from Pageable resolver when
+  // the browser URL has stale or invalid `sort` query parameters.
+  const { data } = await apiClient.get<PageResponse<BookingResponse>>(
+    `${ENDPOINTS.admin.bookings}?page=0&size=100`
+  )
   return data.content || []
 }
+
 
 async function fetchPendingListings(): Promise<PropertyResponse[]> {
   const { data } = await apiClient.get<PageResponse<PropertyResponse>>(ENDPOINTS.admin.pendingListings)

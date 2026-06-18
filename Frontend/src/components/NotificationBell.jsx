@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Bell, CalendarCheck, CheckCircle, CreditCard, RefreshCw, Shield } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { notificationService } from '../services/notificationService'
+import { authService } from '../services/authService'
+
+const ROLE_STORAGE_KEY = 'userRole'
 
 const formatRelativeTime = (value) => {
   if (!value) return ''
@@ -19,6 +22,7 @@ function NotificationBell({ user }) {
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(false)
+  const [roleUpgradeBanner, setRoleUpgradeBanner] = useState(false)
   const containerRef = useRef(null)
 
   const unreadCount = useMemo(
@@ -36,6 +40,31 @@ function NotificationBell({ user }) {
     try {
       const data = await notificationService.listMine()
       setNotifications(data)
+
+      // Auto-refresh session when a host-approval SYSTEM notification is found.
+      // The JWT does NOT embed role claims — it only stores the email subject.
+      // The backend always re-reads role from MongoDB, so the change is already
+      // effective server-side. Only localStorage is stale until refreshed here.
+      const hasHostApproval = data.some(
+        (n) =>
+          !n.isRead &&
+          n.type === 'SYSTEM' &&
+          n.title &&
+          n.title.includes('Host Application Approved'),
+      )
+
+      if (hasHostApproval) {
+        const currentRole = localStorage.getItem(ROLE_STORAGE_KEY)
+        if (currentRole && currentRole.toLowerCase() !== 'host') {
+          const updated = await authService.refreshUserSession()
+          if (updated?.role) {
+            const newRole = typeof updated.role === 'string' ? updated.role : String(updated.role)
+            if (newRole.toLowerCase() === 'host') {
+              setRoleUpgradeBanner(true)
+            }
+          }
+        }
+      }
     } catch {
       setNotifications([])
     } finally {
@@ -85,6 +114,34 @@ function NotificationBell({ user }) {
 
   return (
     <div ref={containerRef} className="relative">
+      {/* Host role-upgrade banner — shown when backend confirms HOST role */}
+      <AnimatePresence>
+        {roleUpgradeBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-5 py-3 rounded-2xl bg-emerald-600 text-white shadow-xl text-sm font-semibold"
+          >
+            <CheckCircle className="w-5 h-5 shrink-0" />
+            <span>🎉 Your host application was approved! Reload to activate HOST features.</span>
+            <button
+              onClick={() => window.location.reload()}
+              className="ml-2 px-3 py-1 rounded-lg bg-white text-emerald-700 text-xs font-bold hover:bg-emerald-50 transition"
+            >
+              Reload
+            </button>
+            <button
+              onClick={() => setRoleUpgradeBanner(false)}
+              className="ml-1 text-white/70 hover:text-white text-lg leading-none"
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <motion.button
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.94 }}
@@ -112,7 +169,9 @@ function NotificationBell({ user }) {
             <div className="px-4 py-3 border-b border-primary-200/60 flex items-center justify-between dark:border-slate-700">
               <div>
                 <p className="text-sm font-semibold text-primary-900 dark:text-slate-100">Notifications</p>
-                <p className="text-[11px] text-primary-500 dark:text-slate-400">{loading ? 'Mise a jour...' : `${notifications.length} total`}</p>
+                <p className="text-[11px] text-primary-500 dark:text-slate-400">
+                  {loading ? 'Mise a jour...' : `${notifications.length} total`}
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -151,16 +210,21 @@ function NotificationBell({ user }) {
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <span className={`mt-1 w-2 h-2 rounded-full shrink-0 ${item.isRead ? 'bg-primary-200 dark:bg-slate-600' : 'bg-[#A65B32]'}`} />
-                      <div className={`mt-0.5 flex h-8 w-8 items-center justify-center rounded-xl ${
-                        item.type === 'BOOKING'
-                          ? 'bg-primary-100 text-primary-600 dark:bg-slate-700 dark:text-slate-200'
-                          : item.type === 'KYC'
-                          ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-200'
-                          : item.type === 'PAYMENT'
-                          ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-200'
-                          : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200'
-                      }`}
+                      <span
+                        className={`mt-1 w-2 h-2 rounded-full shrink-0 ${
+                          item.isRead ? 'bg-primary-200 dark:bg-slate-600' : 'bg-[#A65B32]'
+                        }`}
+                      />
+                      <div
+                        className={`mt-0.5 flex h-8 w-8 items-center justify-center rounded-xl ${
+                          item.type === 'BOOKING'
+                            ? 'bg-primary-100 text-primary-600 dark:bg-slate-700 dark:text-slate-200'
+                            : item.type === 'KYC'
+                            ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-200'
+                            : item.type === 'PAYMENT'
+                            ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-200'
+                            : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200'
+                        }`}
                       >
                         {item.type === 'BOOKING' ? (
                           <CalendarCheck className="w-4 h-4" />
@@ -173,9 +237,15 @@ function NotificationBell({ user }) {
                         )}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-primary-900 truncate dark:text-slate-100">{item.title}</p>
-                        <p className="text-xs text-primary-700 truncate dark:text-slate-300">{item.message}</p>
-                        <p className="text-[11px] text-primary-500 mt-1 dark:text-slate-400">{formatRelativeTime(item.createdAt)}</p>
+                        <p className="text-sm font-semibold text-primary-900 truncate dark:text-slate-100">
+                          {item.title}
+                        </p>
+                        <p className="text-xs text-primary-700 truncate dark:text-slate-300">
+                          {item.message}
+                        </p>
+                        <p className="text-[11px] text-primary-500 mt-1 dark:text-slate-400">
+                          {formatRelativeTime(item.createdAt)}
+                        </p>
                       </div>
                     </div>
                   </button>
