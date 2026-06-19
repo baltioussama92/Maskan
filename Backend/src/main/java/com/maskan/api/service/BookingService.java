@@ -5,6 +5,7 @@ import com.maskan.api.dto.BookingResponse;
 import com.maskan.api.dto.BookingStatusUpdateRequest;
 import com.maskan.api.dto.CheckInVerificationResponse;
 import com.maskan.api.dto.VerifyCheckInRequest;
+import com.maskan.api.dto.BookedDateRangeResponse;
 import com.maskan.api.dto.UnavailableDateRangeResponse;
 
 import org.springframework.data.domain.Page;
@@ -21,5 +22,6 @@ public interface BookingService {
     Page<BookingResponse> getOwnerBookings(String email, Pageable pageable);
     Page<BookingResponse> getAllBookings(Pageable pageable);
     List<UnavailableDateRangeResponse> getUnavailableDateRangesForListing(String listingId);
+    List<BookedDateRangeResponse> getBookedDateRangesForProperty(String propertyId);
 }
 

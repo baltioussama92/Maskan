@@ -229,15 +229,55 @@ function formatDateForApi(date) {
   return `${year}-${month}-${day}`
 }
 
-function isSameCalendarDay(firstDate, secondDate) {
-  if (!(firstDate instanceof Date) || !(secondDate instanceof Date)) {
+function buildBookedDateRanges(rawRanges) {
+  return (Array.isArray(rawRanges) ? rawRanges : [])
+    .map((range) => ({
+      start: parseIsoDateToLocalDate(range.startDate || range.checkInDate),
+      end: parseIsoDateToLocalDate(range.endDate || range.checkOutDate),
+    }))
+    .filter((range) => range.start && range.end)
+}
+
+function buildExcludedStayIntervals(bookedRanges) {
+  return bookedRanges.map((range) => {
+    const lastBlockedNight = new Date(range.end)
+    lastBlockedNight.setDate(lastBlockedNight.getDate() - 1)
+
+    if (lastBlockedNight < range.start) {
+      return { start: range.start, end: range.start }
+    }
+
+    return { start: range.start, end: lastBlockedNight }
+  })
+}
+
+function buildExcludedStayDates(bookedRanges) {
+  const uniqueDates = new Map()
+
+  bookedRanges.forEach((range) => {
+    const cursor = new Date(range.start)
+    while (cursor < range.end) {
+      uniqueDates.set(formatDateForApi(cursor), new Date(cursor))
+      cursor.setDate(cursor.getDate() + 1)
+    }
+  })
+
+  return Array.from(uniqueDates.values())
+}
+
+function isDateWithinBookedRanges(date, bookedRanges) {
+  if (!(date instanceof Date)) {
     return false
   }
 
-  return firstDate.getFullYear() === secondDate.getFullYear()
-    && firstDate.getMonth() === secondDate.getMonth()
-    && firstDate.getDate() === secondDate.getDate()
+  const day = toDateOnly(date)
+  return bookedRanges.some((range) => day >= range.start && day < range.end)
 }
+
+function hasBookedRangeOverlap(startDate, endDate, bookedRanges) {
+  return bookedRanges.some((range) => range.start < endDate && range.end > startDate)
+}
+
 
 function BookingSidebar({ property, user, onAuthClick, onRequireVerification, notify }) {
   const [checkIn, setCheckIn]   = useState(null)
@@ -247,50 +287,40 @@ function BookingSidebar({ property, user, onAuthClick, onRequireVerification, no
   const [loading, setLoading]   = useState(false)
   const [booked, setBooked]     = useState(false)
   const [error, setError]       = useState('')
-  const [unavailableDateRanges, setUnavailableDateRanges] = useState([])
+  const [bookedDateRanges, setBookedDateRanges] = useState([])
 
   useEffect(() => {
     let active = true
-    bookingService.getUnavailableDates(property.id)
+    bookingService.getBookedDates(property.id)
       .then((data) => {
         if (!active) return
-        setUnavailableDateRanges(Array.isArray(data) ? data : [])
+        setBookedDateRanges(buildBookedDateRanges(data))
       })
-      .catch((error) => {
+      .catch(() => {
         if (!active) return
-        console.log('Error fetching unavailable dates:', error)
-        setUnavailableDateRanges([])
+        bookingService.getUnavailableDates(property.id)
+          .then((legacyData) => {
+            if (!active) return
+            setBookedDateRanges(buildBookedDateRanges(legacyData))
+          })
+          .catch(() => {
+            if (!active) return
+            setBookedDateRanges([])
+          })
       })
 
     return () => { active = false }
   }, [property.id])
 
-  const parsedUnavailableRanges = useMemo(() => (
-    unavailableDateRanges
-      .map((range) => ({
-        start: parseIsoDateToLocalDate(range.checkInDate),
-        end: parseIsoDateToLocalDate(range.checkOutDate),
-      }))
-      .filter((range) => range.start && range.end)
-  ), [unavailableDateRanges])
+  const excludedDateIntervals = useMemo(
+    () => buildExcludedStayIntervals(bookedDateRanges),
+    [bookedDateRanges],
+  )
 
-  const unavailableDates = useMemo(() => {
-    const uniqueDates = new Map()
-
-    parsedUnavailableRanges.forEach((range) => {
-      const cursor = new Date(range.start)
-      while (cursor < range.end) {
-        uniqueDates.set(formatDateForApi(cursor), new Date(cursor))
-        cursor.setDate(cursor.getDate() + 1)
-      }
-    })
-
-    return Array.from(uniqueDates.values())
-  }, [parsedUnavailableRanges])
-
-  const hasDateRangeOverlap = (startDate, endDate) => {
-    return parsedUnavailableRanges.some((range) => range.start < endDate && range.end > startDate)
-  }
+  const unavailableDates = useMemo(
+    () => buildExcludedStayDates(bookedDateRanges),
+    [bookedDateRanges],
+  )
 
   const minimumCheckoutDate = useMemo(() => {
     if (!checkIn) {
@@ -327,7 +357,7 @@ function BookingSidebar({ property, user, onAuthClick, onRequireVerification, no
       setError('Veuillez sélectionner des dates valides.')
       return
     }
-    if (hasDateRangeOverlap(checkIn, checkOut)) {
+    if (hasBookedRangeOverlap(checkIn, checkOut, bookedDateRanges)) {
       setError('Ces dates ne sont plus disponibles. Veuillez sélectionner une autre période.')
       return
     }
@@ -405,11 +435,14 @@ function BookingSidebar({ property, user, onAuthClick, onRequireVerification, no
                   endDate={checkOut}
                   selectsStart
                   minDate={today}
+                  excludeDateIntervals={excludedDateIntervals}
                   excludeDates={unavailableDates}
-                  dayClassName={(date) => {
-                    const isUnavailable = unavailableDates.some((unavailableDate) => isSameCalendarDay(unavailableDate, date))
-                    return isUnavailable ? 'maskan-day-unavailable' : 'maskan-day-available'
-                  }}
+                  filterDate={(date) => !isDateWithinBookedRanges(date, bookedDateRanges)}
+                  dayClassName={(date) => (
+                    isDateWithinBookedRanges(date, bookedDateRanges)
+                      ? 'maskan-day-unavailable'
+                      : 'maskan-day-available'
+                  )}
                   onChange={(date) => {
                     setCheckIn(date)
                     if (checkOut && date && checkOut <= date) {
@@ -434,17 +467,23 @@ function BookingSidebar({ property, user, onAuthClick, onRequireVerification, no
                   endDate={checkOut}
                   selectsEnd
                   minDate={minimumCheckoutDate}
+                  excludeDateIntervals={excludedDateIntervals}
                   excludeDates={unavailableDates}
-                  dayClassName={(date) => {
-                    const isUnavailable = unavailableDates.some((unavailableDate) => isSameCalendarDay(unavailableDate, date))
-                    return isUnavailable ? 'maskan-day-unavailable' : 'maskan-day-available'
-                  }}
+                  dayClassName={(date) => (
+                    isDateWithinBookedRanges(date, bookedDateRanges)
+                      ? 'maskan-day-unavailable'
+                      : 'maskan-day-available'
+                  )}
                   filterDate={(date) => {
+                    if (isDateWithinBookedRanges(date, bookedDateRanges)) {
+                      return false
+                    }
+
                     if (!checkIn) {
                       return date > today
                     }
 
-                    return date > checkIn && !hasDateRangeOverlap(checkIn, date)
+                    return date > checkIn && !hasBookedRangeOverlap(checkIn, date, bookedDateRanges)
                   }}
                   onChange={(date) => setCheckOut(date)}
                   dateFormat="yyyy-MM-dd"

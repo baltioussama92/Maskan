@@ -273,6 +273,11 @@ export interface UnavailableDateRange {
   checkOutDate: string
 }
 
+export interface BookedDateRange {
+  startDate: string
+  endDate: string
+}
+
 // ── Reviews ──────────────────────────────────────────────────
 export interface ReviewRequest {
   propertyId: string

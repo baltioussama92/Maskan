@@ -9,6 +9,7 @@ export const ENDPOINTS = {
     mine: '/listings/owner/me',
     search: '/listings/search',
     byId: (id: number | string) => `/listings/${id}`,
+    bookedDates: (propertyId: number | string) => `/properties/${propertyId}/booked-dates`,
   },
   bookings: {
     listMine: '/bookings/me',

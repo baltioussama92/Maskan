@@ -5,6 +5,7 @@ import com.maskan.api.dto.BookingRequest;
 import com.maskan.api.dto.BookingResponse;
 import com.maskan.api.dto.BookingStatusUpdateRequest;
 import com.maskan.api.dto.CheckInVerificationResponse;
+import com.maskan.api.dto.BookedDateRangeResponse;
 import com.maskan.api.dto.UnavailableDateRangeResponse;
 import com.maskan.api.dto.VerifyCheckInRequest;
 import com.maskan.api.entity.Booking;
@@ -43,6 +44,16 @@ import java.util.UUID;
 @Transactional
 public class BookingServiceImpl implements BookingService {
 
+    private static final List<BookingStatus> BLOCKING_STATUSES = List.of(
+            BookingStatus.PENDING,
+            BookingStatus.CONFIRMED,
+            BookingStatus.ACCEPTED,
+            BookingStatus.AWAITING_PAYMENT,
+            BookingStatus.AWAITING_CHECKIN,
+            BookingStatus.PAID_AWAITING_CHECKIN,
+            BookingStatus.COMPLETED
+    );
+
     private final BookingRepository bookingRepository;
     private final PropertyRepository propertyRepository;
     private final UserRepository userRepository;
@@ -65,13 +76,7 @@ public class BookingServiceImpl implements BookingService {
             request.getCheckInDate(),
             request.getCheckOutDate(),
             null,
-            List.of(
-                    BookingStatus.PENDING,
-                    BookingStatus.CONFIRMED,
-                    BookingStatus.AWAITING_PAYMENT,
-                    BookingStatus.AWAITING_CHECKIN,
-                    BookingStatus.PAID_AWAITING_CHECKIN
-            )
+            BLOCKING_STATUSES
         );
 
         Booking booking = Booking.builder()
@@ -122,13 +127,7 @@ public class BookingServiceImpl implements BookingService {
                     booking.getCheckInDate(),
                     booking.getCheckOutDate(),
                     booking.getId(),
-                List.of(
-                    BookingStatus.PENDING,
-                    BookingStatus.CONFIRMED,
-                    BookingStatus.AWAITING_PAYMENT,
-                    BookingStatus.AWAITING_CHECKIN,
-                    BookingStatus.PAID_AWAITING_CHECKIN
-                )
+                BLOCKING_STATUSES
             );
         }
 
@@ -289,22 +288,32 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional(readOnly = true)
     public List<UnavailableDateRangeResponse> getUnavailableDateRangesForListing(String listingId) {
-        return bookingRepository.findByListingIdAndStatusIn(
-                listingId,
-            List.of(
-                BookingStatus.PENDING,
-                BookingStatus.CONFIRMED,
-                BookingStatus.AWAITING_PAYMENT,
-                BookingStatus.AWAITING_CHECKIN,
-                BookingStatus.PAID_AWAITING_CHECKIN
-            )
-        ).stream()
-                .filter(booking -> booking.getCheckInDate() != null && booking.getCheckOutDate() != null)
-                .sorted(Comparator.comparing(Booking::getCheckInDate))
+        return getBlockingBookings(listingId).stream()
                 .map(booking -> UnavailableDateRangeResponse.builder()
                         .checkInDate(booking.getCheckInDate())
                         .checkOutDate(booking.getCheckOutDate())
                         .build())
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookedDateRangeResponse> getBookedDateRangesForProperty(String propertyId) {
+        propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new NotFoundException("Property not found"));
+
+        return getBlockingBookings(propertyId).stream()
+                .map(booking -> BookedDateRangeResponse.builder()
+                        .startDate(booking.getCheckInDate())
+                        .endDate(booking.getCheckOutDate())
+                        .build())
+                .toList();
+    }
+
+    private List<Booking> getBlockingBookings(String listingId) {
+        return bookingRepository.findByListingIdAndStatusIn(listingId, BLOCKING_STATUSES).stream()
+                .filter(booking -> booking.getCheckInDate() != null && booking.getCheckOutDate() != null)
+                .sorted(Comparator.comparing(Booking::getCheckInDate))
                 .toList();
     }
 

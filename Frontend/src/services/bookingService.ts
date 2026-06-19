@@ -9,6 +9,7 @@ import type {
   PageResponse,
   PaymentCheckoutResponse,
   UnavailableDateRange,
+  BookedDateRange,
 } from '../utils/contracts'
 
 export const bookingService = {
@@ -31,6 +32,11 @@ export const bookingService = {
 
   async getUnavailableDates(listingId: number | string): Promise<UnavailableDateRange[]> {
     const { data } = await apiClient.get<UnavailableDateRange[]>(ENDPOINTS.bookings.unavailableDates(listingId))
+    return data
+  },
+
+  async getBookedDates(propertyId: number | string): Promise<BookedDateRange[]> {
+    const { data } = await apiClient.get<BookedDateRange[]>(ENDPOINTS.properties.bookedDates(propertyId))
     return data
   },
 

@@ -42,6 +42,7 @@ public class SecurityConfig {
                     .requestMatchers("/uploads/**").permitAll()
                     .requestMatchers("/api/listings", "/api/listings/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/properties/*/reviews").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/properties/*/booked-dates").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/bookings/listing/*/unavailable-dates").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/reviews/eligibility/**").permitAll()
                         .requestMatchers("/api/reviews/**").permitAll()
