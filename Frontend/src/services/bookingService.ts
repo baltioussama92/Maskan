@@ -45,9 +45,13 @@ export const bookingService = {
     return data
   },
 
-  async checkoutPayment(bookingId: number | string): Promise<PaymentCheckoutResponse> {
-    const { data } = await apiClient.post<PaymentCheckoutResponse>(ENDPOINTS.payments.checkout(bookingId))
+  async payEscrow(bookingId: number | string): Promise<PaymentCheckoutResponse> {
+    const { data } = await apiClient.put<PaymentCheckoutResponse>(ENDPOINTS.bookings.pay(bookingId))
     return data
+  },
+
+  async checkoutPayment(bookingId: number | string): Promise<PaymentCheckoutResponse> {
+    return this.payEscrow(bookingId)
   },
 
   async verifyCheckIn(bookingId: number | string, secretCode: string): Promise<CheckInVerificationResponse> {

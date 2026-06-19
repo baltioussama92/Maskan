@@ -9,6 +9,7 @@ import {
 import { bookingService } from '../services/bookingService'
 import { propertyService } from '../services/propertyService'
 import GuestCheckInQRCode from '../components/bookings/GuestCheckInQRCode'
+import EscrowPaymentModal from '../components/bookings/EscrowPaymentModal'
 
 // ── Status config ────────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -106,7 +107,7 @@ export default function BookingsPage({ user }) {
   const [expandedId, setExpandedId] = useState(null)
   const [allBookings, setAllBookings] = useState([])
   const [loading, setLoading] = useState(true)
-  const [payingBookingId, setPayingBookingId] = useState(null)
+  const [paymentModalBooking, setPaymentModalBooking] = useState(null)
   const [paymentError, setPaymentError] = useState('')
 
   const loadBookings = async (active = true, silent = false) => {
@@ -183,23 +184,35 @@ export default function BookingsPage({ user }) {
     }
   }, [user])
 
-  const handlePayNow = async (bookingId) => {
-    if (payingBookingId) return
+  const handleEscrowPaymentSuccess = async (bookingId) => {
+    const result = await bookingService.payEscrow(bookingId)
+
+    setAllBookings((prev) => prev.map((booking) => (
+      booking.id === bookingId
+        ? {
+            ...booking,
+            status: 'paid_awaiting_checkin',
+            checkInSecretCode: result.checkInSecretCode || booking.checkInSecretCode,
+          }
+        : booking
+    )))
+
+    setPaymentModalBooking(null)
+    setExpandedId(bookingId)
     setPaymentError('')
-    setPayingBookingId(bookingId)
-    try {
-      await bookingService.checkoutPayment(bookingId)
-      await loadBookings(true, true)
-      window.dispatchEvent(new CustomEvent('booking:status-updated', {
-        detail: { bookingId, status: 'PAID_AWAITING_CHECKIN' },
-      }))
-    } catch (error) {
-      const apiMessage = error?.response?.data?.message || error?.message
-      setPaymentError(apiMessage || 'Paiement impossible pour cette réservation.')
-    } finally {
-      setPayingBookingId(null)
-    }
+
+    window.dispatchEvent(new CustomEvent('booking:status-updated', {
+      detail: { bookingId, status: 'PAID_AWAITING_CHECKIN' },
+    }))
   }
+
+  const isEscrowAwaitingPayment = (booking) => (
+    booking.status === 'awaiting_payment' && booking.paymentMethod === 'CARD'
+  )
+
+  const isCashAwaitingCheckIn = (booking) => (
+    booking.status === 'awaiting_checkin' && booking.paymentMethod === 'CASH'
+  )
 
   if (!user) return <Navigate to="/" replace />
 
@@ -459,28 +472,36 @@ export default function BookingsPage({ user }) {
                                   Contacter l'hôte
                                 </button>
                               )}
-                              {b.status === 'awaiting_payment' && (
+                              {isEscrowAwaitingPayment(b) && (
                                 <button
-                                  onClick={() => handlePayNow(b.id)}
-                                  disabled={payingBookingId === b.id}
-                                  className="px-3.5 py-2 rounded-xl bg-emerald-500 text-xs font-bold text-white shadow-sm hover:bg-emerald-600 transition disabled:opacity-60"
+                                  onClick={() => setPaymentModalBooking(b)}
+                                  className="px-3.5 py-2 rounded-xl bg-emerald-500 text-xs font-bold text-white shadow-sm hover:bg-emerald-600 transition"
                                 >
-                                  {payingBookingId === b.id ? 'Paiement...' : 'Pay Now'}
+                                  Pay Now
                                 </button>
                               )}
                             </div>
                           </div>
 
-                          {b.status === 'awaiting_checkin' && (
-                            <div className="mt-4 rounded-2xl border border-primary-200 bg-primary-50 p-4">
-                              <p className="text-sm font-semibold text-primary-800">Paiement cash a l'arrivee</p>
-                              <p className="text-xs text-primary-600 mt-1">
-                                Please pay {b.totalPrice.toLocaleString('fr-TN')} DT in cash upon arrival.
+                          {isEscrowAwaitingPayment(b) && (
+                            <div className="mt-4 rounded-2xl border border-orange-200 bg-orange-50 p-4">
+                              <p className="text-sm font-semibold text-orange-800">Paiement attendu (escrow)</p>
+                              <p className="text-xs text-orange-700 mt-1">
+                                Finalisez le paiement par carte pour recevoir votre code QR de check-in.
                               </p>
                             </div>
                           )}
 
-                          {(b.status === 'paid_awaiting_checkin' || b.status === 'awaiting_checkin') && (
+                          {isCashAwaitingCheckIn(b) && (
+                            <div className="mt-4 rounded-2xl border border-primary-200 bg-primary-50 p-4">
+                              <p className="text-sm font-semibold text-primary-800">Check-in requis (cash)</p>
+                              <p className="text-xs text-primary-600 mt-1">
+                                Vous paierez {b.totalPrice.toLocaleString('fr-TN')} DT en espèces directement à l'hôte à l'arrivée.
+                              </p>
+                            </div>
+                          )}
+
+                          {(b.status === 'paid_awaiting_checkin' || isCashAwaitingCheckIn(b)) && (
                             <GuestCheckInQRCode secretCode={b.checkInSecretCode} />
                           )}
                         </div>
@@ -495,6 +516,13 @@ export default function BookingsPage({ user }) {
         </>
         )}
       </div>
+
+      <EscrowPaymentModal
+        open={Boolean(paymentModalBooking)}
+        booking={paymentModalBooking}
+        onClose={() => setPaymentModalBooking(null)}
+        onSuccess={handleEscrowPaymentSuccess}
+      />
     </section>
   )
 }

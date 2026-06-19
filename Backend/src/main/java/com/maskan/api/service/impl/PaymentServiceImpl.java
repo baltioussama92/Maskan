@@ -1,6 +1,7 @@
 package com.maskan.api.service.impl;
 
 import com.maskan.api.dto.PaymentCheckoutResponse;
+import com.maskan.api.entity.BookingPaymentMethod;
 import com.maskan.api.entity.Booking;
 import com.maskan.api.entity.BookingStatus;
 import com.maskan.api.entity.User;
@@ -24,6 +25,11 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public PaymentCheckoutResponse checkout(String bookingId, String email) {
+        return payEscrow(bookingId, email);
+    }
+
+    @Override
+    public PaymentCheckoutResponse payEscrow(String bookingId, String email) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("Booking not found"));
 
@@ -32,6 +38,10 @@ public class PaymentServiceImpl implements PaymentService {
 
         if (!current.getId().equals(booking.getGuestId())) {
             throw new IllegalArgumentException("Not authorized to pay this booking");
+        }
+
+        if (booking.getPaymentMethod() == BookingPaymentMethod.CASH) {
+            throw new IllegalArgumentException("Cash reservations must be paid directly to the host at check-in");
         }
 
         if (booking.getStatus() != BookingStatus.AWAITING_PAYMENT) {
