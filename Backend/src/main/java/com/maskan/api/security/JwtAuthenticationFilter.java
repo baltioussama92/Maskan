@@ -41,7 +41,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (!userDetails.isEnabled()) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 response.setContentType("application/json");
-                response.getWriter().write("{\"message\":\"User is blocked\"}");
+                response.getWriter().write("{\"error\":\"ACCOUNT_BANNED\",\"message\":\"Your account is banned.\"}");
                 return;
             }
 

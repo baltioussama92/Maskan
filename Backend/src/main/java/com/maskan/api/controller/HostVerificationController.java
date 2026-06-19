@@ -6,6 +6,7 @@ import com.maskan.api.entity.HostDemandStatus;
 import com.maskan.api.entity.User;
 import com.maskan.api.repository.HostDemandRepository;
 import com.maskan.api.repository.UserRepository;
+import com.maskan.api.util.HostDemandMediaResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -76,11 +77,6 @@ public class HostVerificationController {
         String propertyProofPath = saveFile(propertyProof);
         List<String> propertyImagePaths = saveFiles(propertyImages);
 
-        List<String> housePictures = new ArrayList<>();
-        housePictures.add(selfiePath);
-        housePictures.add(propertyProofPath);
-        housePictures.addAll(propertyImagePaths);
-
         String resolvedName = StringUtils.hasText(fullName) ? fullName.trim() : user.getName();
         String resolvedEmail = StringUtils.hasText(email) ? email.trim() : user.getEmail();
         String resolvedPhone = StringUtils.hasText(phone) ? phone.trim() : user.getPhone();
@@ -94,10 +90,12 @@ public class HostVerificationController {
                 .phone(resolvedPhone)
                 .submittedDate(Instant.now())
                 .idDocumentUrl(governmentIdPath)
+                .selfieUrl(selfiePath)
+                .propertyProofUrl(propertyProofPath)
                 .idStatus(HostDemandStatus.PENDING)
                 .proposedLocation(resolvedLocation)
                 .proposedPricePerNight(resolvedPrice)
-                .housePictures(housePictures)
+                .housePictures(propertyImagePaths)
                 .status(HostDemandStatus.PENDING)
                 .build();
 
@@ -174,12 +172,18 @@ public class HostVerificationController {
     }
 
     private HostDemandResponse toHostDemandResponse(HostDemand demand) {
-        List<String> housePictures = demand.getHousePictures() == null ? List.of() : demand.getHousePictures();
+        HostDemandMediaResolver.ResolvedMedia media = HostDemandMediaResolver.resolve(demand);
         List<String> documents = new ArrayList<>();
         if (demand.getIdDocumentUrl() != null && !demand.getIdDocumentUrl().isBlank()) {
             documents.add(demand.getIdDocumentUrl());
         }
-        documents.addAll(housePictures);
+        if (media.selfieUrl() != null) {
+            documents.add(media.selfieUrl());
+        }
+        if (media.propertyProofUrl() != null) {
+            documents.add(media.propertyProofUrl());
+        }
+        documents.addAll(media.housePictures());
 
         HostDemandStatus status = (demand.getStatus() == null ? HostDemandStatus.PENDING : demand.getStatus()).normalized();
         HostDemandStatus idStatus = (demand.getIdStatus() == null ? HostDemandStatus.PENDING : demand.getIdStatus()).normalized();
@@ -194,9 +198,11 @@ public class HostVerificationController {
                 .submittedDate(demand.getSubmittedDate() == null ? null : demand.getSubmittedDate().toString())
                 .documents(documents)
                 .idDocument(demand.getIdDocumentUrl())
+                .selfieUrl(media.selfieUrl())
+                .propertyProofUrl(media.propertyProofUrl())
                 .idVerificationStatus(idStatus == HostDemandStatus.APPROVED ? "verified"
                         : idStatus == HostDemandStatus.REJECTED ? "rejected" : "pending")
-                .housePictures(housePictures)
+                .housePictures(media.housePictures())
                 .proposedPrice(demand.getProposedPricePerNight() == null ? 0 : demand.getProposedPricePerNight())
                 .proposedLocation(demand.getProposedLocation() == null ? "N/A" : demand.getProposedLocation())
                 .bio(null)

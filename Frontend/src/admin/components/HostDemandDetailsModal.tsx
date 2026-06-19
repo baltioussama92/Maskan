@@ -1,12 +1,19 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { HostDemand } from '../services/adminApi'
+import ImageLightbox, { ClickableImagePreview } from './ImageLightbox'
+import { toAssetUrl } from '../utils/assetUrl'
 
 interface HostDemandDetailsModalProps {
   demand: HostDemand
   onClose: () => void
   onApprove: () => void
   onReject: (reason: string) => void
+}
+
+interface LightboxState {
+  src: string
+  alt: string
 }
 
 export default function HostDemandDetailsModal({
@@ -18,6 +25,11 @@ export default function HostDemandDetailsModal({
   const [rejectionReason, setRejectionReason] = useState('')
   const [showRejectForm, setShowRejectForm] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [lightbox, setLightbox] = useState<LightboxState | null>(null)
+
+  const openLightbox = (src: string, alt: string) => {
+    setLightbox({ src: toAssetUrl(src), alt })
+  }
 
   const handleApprove = async () => {
     setLoading(true)
@@ -124,15 +136,24 @@ export default function HostDemandDetailsModal({
                     </div>
                   </div>
                 </div>
-                {demand.idDocument && (
-                  <div>
-                    <label className="text-xs font-semibold text-[#6B5D54]">ID Document Preview</label>
-                    <img
-                      src={demand.idDocument}
-                      alt="ID Document"
-                      className="mt-2 w-full max-h-48 object-cover rounded-lg border border-[#D4C4B9]"
-                    />
-                  </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <ClickableImagePreview
+                    src={demand.idDocument}
+                    alt="Government ID document"
+                    label="ID Document Preview"
+                    onOpen={openLightbox}
+                  />
+                  <ClickableImagePreview
+                    src={demand.selfieUrl}
+                    alt="Applicant selfie"
+                    label="Selfie Preview"
+                    onOpen={openLightbox}
+                  />
+                </div>
+
+                {!demand.idDocument && !demand.selfieUrl && (
+                  <p className="text-sm text-[#6B5D54]">No identity documents uploaded.</p>
                 )}
               </div>
             </section>
@@ -158,14 +179,19 @@ export default function HostDemandDetailsModal({
                 <h3 className="text-lg font-bold text-[#3A2D28] mb-4">4. House Pictures</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {demand.housePictures.map((pic, idx) => (
-                    <div key={idx} className="aspect-video rounded-lg overflow-hidden border border-[#D4C4B9]">
+                    <button
+                      key={`${pic}-${idx}`}
+                      type="button"
+                      onClick={() => openLightbox(pic, `House picture ${idx + 1}`)}
+                      className="aspect-video overflow-hidden rounded-lg border border-[#D4C4B9] text-left transition hover:border-[#CBAD8D] focus:outline-none focus:ring-2 focus:ring-[#CBAD8D]"
+                      aria-label={`View house picture ${idx + 1}`}
+                    >
                       <img
-                        src={pic}
+                        src={toAssetUrl(pic)}
                         alt={`House ${idx + 1}`}
-                        className="w-full h-full object-cover hover:scale-105 transition cursor-pointer"
-                        onClick={() => window.open(pic, '_blank')}
+                        className="h-full w-full cursor-zoom-in object-cover transition hover:scale-105"
                       />
-                    </div>
+                    </button>
                   ))}
                 </div>
               </section>
@@ -178,9 +204,10 @@ export default function HostDemandDetailsModal({
                 <div className="space-y-2">
                   {demand.documents.map((doc, idx) => (
                     <a
-                      key={idx}
-                      href={doc}
-                      download
+                      key={`${doc}-${idx}`}
+                      href={toAssetUrl(doc)}
+                      target="_blank"
+                      rel="noreferrer"
                       className="flex items-center gap-3 p-3 bg-[#FBF8F3] rounded-lg hover:bg-[#E8DED2] transition"
                     >
                       <span className="text-xl">📄</span>
@@ -268,6 +295,14 @@ export default function HostDemandDetailsModal({
           </div>
         </motion.div>
       </motion.div>
+
+      {lightbox ? (
+        <ImageLightbox
+          src={lightbox.src}
+          alt={lightbox.alt}
+          onClose={() => setLightbox(null)}
+        />
+      ) : null}
     </AnimatePresence>
   )
 }

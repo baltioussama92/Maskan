@@ -51,6 +51,38 @@ function resolveApiErrorMessage(payload: unknown, fallback: string): string {
   return fallback
 }
 
+function isAccountBannedPayload(payload: unknown): boolean {
+  if (!payload || typeof payload !== 'object') {
+    return false
+  }
+
+  const typedPayload = payload as { error?: unknown; code?: unknown }
+  return typedPayload.error === 'ACCOUNT_BANNED' || typedPayload.code === 'ACCOUNT_BANNED'
+}
+
+function shouldSkipGlobalAuthHandling(requestUrl?: string): boolean {
+  if (!requestUrl) {
+    return false
+  }
+
+  const normalized = requestUrl.toLowerCase()
+  return normalized.includes('/auth/login')
+    || normalized.includes('/auth/register')
+    || normalized.includes('/auth/forgot-password')
+    || normalized.includes('/auth/verify-otp')
+    || normalized.includes('/auth/reset-password')
+}
+
+function clearClientSession(): void {
+  clearStoredAuthToken()
+  localStorage.removeItem(USER_STORAGE_KEY)
+  localStorage.removeItem(ROLE_STORAGE_KEY)
+}
+
+function isProtectedAppPath(pathname: string): boolean {
+  return /^\/(profile|settings|bookings|messages|notifications|wishlist|dashboard|admin|host-verification|guest-verification)(\/|$)/.test(pathname)
+}
+
 axiosInstance.interceptors.request.use((config) => {
   const token = getStoredAuthToken()
   if (token) {
@@ -64,31 +96,36 @@ axiosInstance.interceptors.response.use(
   (error) => {
     const status = error?.response?.status
     const payload = error?.response?.data
+    const requestUrl = typeof error?.config?.url === 'string' ? error.config.url : undefined
+    const hadToken = Boolean(getStoredAuthToken())
     const fallbackMessage = typeof error?.message === 'string' && error.message.trim()
       ? error.message
       : 'Request failed'
 
     error.message = resolveApiErrorMessage(payload, fallbackMessage)
 
-    if (status === 401 || status === 403) {
-      const message = status === 403
-        ? 'Votre compte est bloqué ou l’accès est interdit.'
-        : 'Votre session a expiré. Veuillez vous reconnecter.'
+    if (!shouldSkipGlobalAuthHandling(requestUrl)) {
+      if (status === 403 && isAccountBannedPayload(payload)) {
+        const message = 'Votre compte est bloqué ou l’accès est interdit.'
+        clearClientSession()
 
-      clearStoredAuthToken()
-      localStorage.removeItem(USER_STORAGE_KEY)
-      localStorage.removeItem(ROLE_STORAGE_KEY)
+        window.dispatchEvent(new CustomEvent('app:notify', {
+          detail: {
+            type: 'error',
+            message,
+          },
+        }))
+        sessionStorage.setItem('appAuthError', message)
 
-      window.dispatchEvent(new CustomEvent('app:notify', {
-        detail: {
-          type: 'error',
-          message,
-        },
-      }))
-      sessionStorage.setItem('appAuthError', message)
+        if (!window.location.search.includes('auth=login')) {
+          window.location.href = '/?auth=login'
+        }
+      } else if (status === 401 && hadToken) {
+        clearClientSession()
 
-      if (!window.location.search.includes('auth=login')) {
-        window.location.href = '/?auth=login'
+        if (isProtectedAppPath(window.location.pathname) && !window.location.search.includes('auth=login')) {
+          window.location.href = '/?auth=login'
+        }
       }
     }
 

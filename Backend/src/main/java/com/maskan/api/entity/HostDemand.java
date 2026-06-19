@@ -26,6 +26,8 @@ public class HostDemand {
     private String phone;
     private Instant submittedDate;
     private String idDocumentUrl;
+    private String selfieUrl;
+    private String propertyProofUrl;
     @Builder.Default
     private HostDemandStatus idStatus = HostDemandStatus.PENDING;
 

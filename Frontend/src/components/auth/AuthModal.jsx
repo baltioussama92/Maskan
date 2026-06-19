@@ -157,7 +157,18 @@ export default function AuthModal({ initialMode = 'login', onClose, onSuccess })
     })
 
     if (!response.ok) {
-      throw new Error('Invalid credentials')
+      let errorPayload = null
+      try {
+        errorPayload = await response.json()
+      } catch {
+        errorPayload = null
+      }
+
+      if (errorPayload?.error === 'ACCOUNT_BANNED') {
+        throw new Error(errorPayload.message || 'Votre compte est bloqué ou l’accès est interdit.')
+      }
+
+      throw new Error(getApiErrorMessage(errorPayload, 'Invalid credentials'))
     }
 
     const payload = await response.json()

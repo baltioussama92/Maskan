@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Modal from '../components/Modal'
 import Table, { type TableColumn } from '../components/Table'
 import { useAdminToast } from '../components/AdminLayout'
-import { adminApi, getHostDemands, type AdminUser, type HostDemand } from '../services/adminApi'
+import { adminApi, getHostDemands, getHostDemandRowKey, type AdminUser, type HostDemand } from '../services/adminApi'
 import { SectionTabs, StatusBadge, SurfaceCard } from '../components/ui'
 
 function toAssetUrl(path: string): string {
@@ -279,7 +279,7 @@ export default function GuestVerificationsPage() {
           <Table
             columns={guestColumns}
             rows={guestRequests}
-            rowKey={(row) => row.id}
+            rowKey={(row) => row.backendId || `guest-${row.id}`}
             loading={loading}
             emptyText="No pending guest verification requests."
           />
@@ -287,7 +287,7 @@ export default function GuestVerificationsPage() {
           <Table
             columns={hostColumns}
             rows={hostRequests}
-            rowKey={(row) => row.id}
+            rowKey={getHostDemandRowKey}
             loading={loading}
             emptyText="No host verification requests."
           />

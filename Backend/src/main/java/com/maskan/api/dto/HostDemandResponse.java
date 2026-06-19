@@ -23,6 +23,8 @@ public class HostDemandResponse {
     private String submittedDate;
     private List<String> documents;
     private String idDocument;
+    private String selfieUrl;
+    private String propertyProofUrl;
     private String idVerificationStatus;
     private List<String> housePictures;
     private double proposedPrice;

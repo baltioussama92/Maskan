@@ -12,6 +12,7 @@ import com.maskan.api.security.JwtService;
 import com.maskan.api.service.AuthService;
 import com.maskan.api.service.EmailService;
 import com.maskan.api.entity.EmailVerificationToken;
+import com.maskan.api.exception.AccountBannedException;
 import com.maskan.api.exception.EmailDeliveryException;
 import com.maskan.api.dto.VerifyPasswordOtpRequest;
 import com.maskan.api.dto.ResetPasswordRequest;
@@ -77,12 +78,16 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse login(LoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+
+        if (Boolean.TRUE.equals(user.getBanned())) {
+            throw new AccountBannedException("Your account is banned.");
+        }
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
-
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
 
         UserDetails principal = toUserDetails(user);
         String token = jwtService.generateToken(principal);

@@ -159,6 +159,8 @@ export interface HostDemand {
   submittedDate: string
   documents: string[]
   idDocument: string
+  selfieUrl?: string
+  propertyProofUrl?: string
   idVerificationStatus: IdVerificationStatus
   housePictures: string[]
   proposedPrice: number
@@ -169,18 +171,32 @@ export interface HostDemand {
 
 interface HostDemandApiResponse {
   id: string
-  userId: string
-  fullName: string
-  email: string
+  userId?: string
+  fullName?: string
+  userName?: string
+  email?: string
+  userEmail?: string
   phone?: string
+  userPhone?: string
   status: string
-  submittedDate: string
-  idDocumentUrl: string
-  idStatus: string
-  housePictures: string[]
-  proposedPricePerNight: number
-  proposedLocation: string
+  submittedDate?: string
+  documents?: string[]
+  idDocumentUrl?: string
+  idDocument?: string
+  selfieUrl?: string
+  propertyProofUrl?: string
+  idStatus?: string
+  idVerificationStatus?: string
+  housePictures?: string[]
+  proposedPricePerNight?: number
+  proposedPrice?: number
+  proposedLocation?: string
+  bio?: string
+  notes?: string
 }
+
+export const getHostDemandRowKey = (row: HostDemand): string =>
+  row.backendId || `host-demand-${row.id}`
 
 export interface DashboardStats {
   totalUsers: number
@@ -354,19 +370,21 @@ const mapHostDemand = (item: HostDemandApiResponse): HostDemand => ({
   id: toNumberId(item.id),
   backendId: item.id,
   userId: String(item.userId || item.id),
-  userName: item.fullName,
-  userEmail: item.email,
-  userPhone: item.phone || undefined,
+  userName: item.userName || item.fullName || '',
+  userEmail: item.userEmail || item.email || '',
+  userPhone: item.userPhone || item.phone || undefined,
   status: mapHostDemandStatus(item.status),
-  submittedDate: item.submittedDate,
-  documents: [],
-  idDocument: item.idDocumentUrl,
-  idVerificationStatus: mapIdVerificationStatus(item.idStatus),
+  submittedDate: item.submittedDate || '',
+  documents: item.documents || [],
+  idDocument: item.idDocument || item.idDocumentUrl || '',
+  selfieUrl: item.selfieUrl || undefined,
+  propertyProofUrl: item.propertyProofUrl || undefined,
+  idVerificationStatus: mapIdVerificationStatus(item.idVerificationStatus || item.idStatus),
   housePictures: item.housePictures || [],
-  proposedPrice: Number(item.proposedPricePerNight || 0),
+  proposedPrice: Number(item.proposedPrice ?? item.proposedPricePerNight ?? 0),
   proposedLocation: item.proposedLocation || 'N/A',
-  bio: undefined,
-  notes: undefined,
+  bio: item.bio || undefined,
+  notes: item.notes || undefined,
 })
 
 const mapListing = (listing: PropertyResponse, isPending: boolean): AdminListing => ({
@@ -870,7 +888,7 @@ export const adminApi = {
 
   async getHostDemands(): Promise<HostDemand[]> {
     const { data } = await apiClient.get<HostDemandApiResponse[]>(ENDPOINTS.admin.hostDemands)
-    return data.map(mapHostDemand)
+    return ensureUniqueIds(data.map(mapHostDemand))
   },
 
   async getHostDemandById(demandId: number | string): Promise<HostDemand | null> {

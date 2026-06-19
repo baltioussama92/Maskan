@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import Card from '../components/Card'
 import Table, { type TableColumn } from '../components/Table'
 import type { HostDemand } from '../services/adminApi'
-import { getHostDemands, approveHostDemand, rejectHostDemand } from '../services/adminApi'
+import { getHostDemands, approveHostDemand, rejectHostDemand, getHostDemandRowKey } from '../services/adminApi'
 import { useAdminToast } from '../components/AdminLayout'
 import HostDemandDetailsModal from '../components/HostDemandDetailsModal'
 
@@ -269,7 +269,7 @@ export default function HostDemandsPage() {
           <Table
             columns={columns}
             rows={filteredDemands}
-            rowKey={(row) => row.id}
+            rowKey={getHostDemandRowKey}
             loading={loading}
             emptyText={filterStatus === 'all' ? 'No host demands found' : `No ${filterStatus} host demands found`}
           />

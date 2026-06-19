@@ -26,6 +26,7 @@ import com.maskan.api.entity.NotificationType;
 import com.maskan.api.entity.Property;
 import com.maskan.api.entity.Role;
 import com.maskan.api.entity.User;
+import com.maskan.api.util.HostDemandMediaResolver;
 import com.maskan.api.repository.BookingRepository;
 import com.maskan.api.repository.PropertyRepository;
 import com.maskan.api.exception.NotFoundException;
@@ -753,12 +754,18 @@ public class AdminServiceImpl implements AdminService {
     }
 
     private HostDemandResponse toHostDemandResponse(HostDemand demand) {
-        List<String> housePictures = demand.getHousePictures() == null ? List.of() : demand.getHousePictures();
+        HostDemandMediaResolver.ResolvedMedia media = HostDemandMediaResolver.resolve(demand);
         List<String> documents = new ArrayList<>();
         if (demand.getIdDocumentUrl() != null && !demand.getIdDocumentUrl().isBlank()) {
             documents.add(demand.getIdDocumentUrl());
         }
-        documents.addAll(housePictures);
+        if (media.selfieUrl() != null) {
+            documents.add(media.selfieUrl());
+        }
+        if (media.propertyProofUrl() != null) {
+            documents.add(media.propertyProofUrl());
+        }
+        documents.addAll(media.housePictures());
 
         String submittedDate = demand.getSubmittedDate() != null
                 ? demand.getSubmittedDate().toString()
@@ -777,8 +784,10 @@ public class AdminServiceImpl implements AdminService {
                 .submittedDate(submittedDate)
                 .documents(documents)
                 .idDocument(demand.getIdDocumentUrl())
+                .selfieUrl(media.selfieUrl())
+                .propertyProofUrl(media.propertyProofUrl())
                 .idVerificationStatus(mapIdVerificationStatus(idStatus))
-                .housePictures(housePictures)
+                .housePictures(media.housePictures())
                 .proposedPrice(demand.getProposedPricePerNight() == null ? 0 : demand.getProposedPricePerNight())
                 .proposedLocation(demand.getProposedLocation() == null ? "N/A" : demand.getProposedLocation())
                 .bio(null)
