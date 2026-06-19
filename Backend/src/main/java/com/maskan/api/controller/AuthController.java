@@ -30,7 +30,7 @@ import com.maskan.api.exception.EmailDeliveryException;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "http://localhost:3001", "http://localhost:3002"})
+@CrossOrigin(origins = "${app.cors.allowed-origin:http://localhost:5173}")
 @RequiredArgsConstructor
 public class AuthController {
 

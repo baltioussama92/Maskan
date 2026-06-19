@@ -412,6 +412,7 @@ const mapBookingStatus = (status: string | undefined): BookingStatus => {
     case 'PAID_AWAITING_CHECKIN':
       return 'paid_awaiting_checkin'
     case 'CONFIRMED':
+    case 'ACCEPTED': // Legacy DB value — treat as confirmed
       return 'confirmed'
     case 'COMPLETED':
       return 'completed'
@@ -487,9 +488,14 @@ const toPayments = (bookings: BookingResponse[]): AdminPayment[] => (
 )
 
 async function fetchAdminBookings(): Promise<BookingResponse[]> {
-  const { data } = await apiClient.get<PageResponse<BookingResponse>>(ENDPOINTS.admin.bookings)
+  // Pass explicit page/size to avoid 400 from Pageable resolver when
+  // the browser URL has stale or invalid `sort` query parameters.
+  const { data } = await apiClient.get<PageResponse<BookingResponse>>(
+    `${ENDPOINTS.admin.bookings}?page=0&size=100`
+  )
   return data.content || []
 }
+
 
 async function fetchPendingListings(): Promise<PropertyResponse[]> {
   const { data } = await apiClient.get<PageResponse<PropertyResponse>>(ENDPOINTS.admin.pendingListings)
@@ -759,10 +765,18 @@ export const adminApi = {
   },
 
   async getDashboardStats(): Promise<DashboardStats> {
-    const [summaryResponse, payments] = await Promise.all([
+    const [summaryResult, paymentsResult] = await Promise.allSettled([
       apiClient.get<AdminSummaryResponse>(ENDPOINTS.dashboard.adminSummary),
       this.getPayments(),
     ])
+
+    const summaryResponse = summaryResult.status === 'fulfilled'
+      ? summaryResult.value
+      : { data: {} as AdminSummaryResponse, status: 200 }
+
+    const payments = paymentsResult.status === 'fulfilled'
+      ? paymentsResult.value
+      : []
 
     const revenue = payments
       .filter((payment) => payment.status === 'paid')
@@ -777,11 +791,15 @@ export const adminApi = {
   },
 
   async getRecentActivity(): Promise<ActivityRow[]> {
-    const [pendingListings, bookings, users] = await Promise.all([
+    const [pendingListingsResult, bookingsResult, usersResult] = await Promise.allSettled([
       fetchPendingListings(),
       fetchAdminBookings(),
       this.getUsers(),
     ])
+
+    const pendingListings = pendingListingsResult.status === 'fulfilled' ? pendingListingsResult.value : []
+    const bookings = bookingsResult.status === 'fulfilled' ? bookingsResult.value : []
+    const users = usersResult.status === 'fulfilled' ? usersResult.value : []
 
     const items: ActivityRow[] = []
 

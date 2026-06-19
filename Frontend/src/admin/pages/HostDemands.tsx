@@ -48,7 +48,15 @@ export default function HostDemandsPage() {
       if (selectedDemand?.id === demand.id || selectedDemand?.backendId === demand.backendId) {
         setSelectedDemand(prev => prev ? { ...prev, status: 'approved' } : null)
       }
-      showToast('Host demand approved successfully', 'success')
+      showToast('Host demand approved — user role upgraded to HOST ✓', 'success')
+      // Inform the admin that the user's JWT is stale until re-login.
+      // The backend sends an in-app notification to the user automatically.
+      setTimeout(() => {
+        showToast(
+          `ℹ️ ${demand.userName} must log out and back in to activate HOST privileges`,
+          'info' as never
+        )
+      }, 1800)
     } catch (error) {
       console.error('Failed to approve host demand:', error)
       showToast('Failed to approve host demand', 'error')
