@@ -181,6 +181,7 @@ public class UserServiceImpl implements UserService {
                 .otherAttachmentFiles(user.getOtherAttachmentFiles())
                 .selfieFile(user.getSelfieFile())
                 .identitySubmittedAt(user.getIdentitySubmittedAt())
+                .trustScore(user.getTrustScore() == null ? 0 : user.getTrustScore())
                 .preferences(toPreferencesDto(ensurePreferences(user)))
                 .build();
     }

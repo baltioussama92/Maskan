@@ -16,9 +16,10 @@ export const ENDPOINTS = {
     listOwner: '/bookings/owner',
     create: '/bookings',
     pay: (id: number | string) => `/reservations/${id}/pay`,
+    cancel: (id: number | string) => `/reservations/${id}/cancel`,
     unavailableDates: (listingId: number | string) => `/bookings/listing/${listingId}/unavailable-dates`,
     updateStatus: (id: number | string) => `/bookings/${id}/status`,
-    verifyCheckIn: (id: number | string) => `/bookings/${id}/verify-checkin`,
+    verifyCheckIn: (id: number | string) => `/reservations/${id}/verify-checkin`,
     delete: (id: number | string) => `/bookings/${id}`,
   },
   payments: {

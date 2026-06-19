@@ -412,12 +412,7 @@ export default function ProfilePage({ user, onUserUpdate, onLogout }) {
     }
   }
 
-  const trustScore = Math.min(100,
-    50
-    + (user?.emailVerified ? 15 : 0)
-    + (user?.phoneVerified ? 15 : 0)
-    + (user?.identityStatus === 'approved' ? 20 : 0)
-  )
+  const trustScore = Math.min(100, Math.max(0, Number(user?.trustScore ?? 0)))
 
   const totalStaysCompleted = guestBookings.filter((booking) => booking.status === 'completed').length
 

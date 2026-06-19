@@ -137,6 +137,7 @@ public class AuthServiceImpl implements AuthService {
                                 .otherAttachmentFiles(user.getOtherAttachmentFiles())
                                 .selfieFile(user.getSelfieFile())
                                 .identitySubmittedAt(user.getIdentitySubmittedAt())
+                                .trustScore(user.getTrustScore() == null ? 0 : user.getTrustScore())
                 .build();
     }
 

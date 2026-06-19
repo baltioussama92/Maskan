@@ -125,6 +125,7 @@ const normalizeUser = (user, localProfile = null) => ({
   identityStatus: user?.identityStatus || 'not_verified',
   verificationLevel: user?.verificationLevel,
   rejectionReason: user?.rejectionReason,
+  trustScore: typeof user?.trustScore === 'number' ? user.trustScore : 0,
 })
 
 // -- Explorer Page with Search -----------------------------------------------
@@ -253,6 +254,7 @@ function AppRoutes() {
           username: backendUser?.username || locallyStoredUser?.username || '',
           bio: backendUser?.bio || locallyStoredUser?.bio || '',
           avatar: backendUser?.avatar || locallyStoredUser?.avatar || '',
+          trustScore: backendUser?.trustScore ?? locallyStoredUser?.trustScore ?? 0,
         }
 
         localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(mergedUser))
@@ -270,6 +272,25 @@ function AppRoutes() {
     }
 
     verifySession()
+  }, [])
+
+  useEffect(() => {
+    const onTrustScoreUpdated = (event) => {
+      const nextScore = event?.detail?.trustScore
+      if (typeof nextScore !== 'number') return
+
+      setUser((prev) => (prev ? { ...prev, trustScore: nextScore } : prev))
+
+      try {
+        const stored = JSON.parse(localStorage.getItem(USER_STORAGE_KEY) || '{}')
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify({ ...stored, trustScore: nextScore }))
+      } catch {
+        // Ignore malformed local profile cache.
+      }
+    }
+
+    window.addEventListener('user:trust-score-updated', onTrustScoreUpdated)
+    return () => window.removeEventListener('user:trust-score-updated', onTrustScoreUpdated)
   }, [])
 
   const handleAuthSuccess = (nextUser) => {

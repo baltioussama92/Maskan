@@ -5,6 +5,7 @@ import QRScannerModal from './QRScannerModal'
 
 export default function HostBookingCard({
   bookingId,
+  paymentMethod = 'CARD',
   onVerified,
   isScannerOpen,
   onOpenScanner,
@@ -16,8 +17,15 @@ export default function HostBookingCard({
     onVerified?.(targetBookingId, verified)
   }
 
+  const isCash = String(paymentMethod).toUpperCase() === 'CASH'
+
   return (
     <>
+      <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+        {isCash
+          ? 'Paiement cash : scannez ou saisissez le code secret du voyageur pour valider le check-in.'
+          : 'Paiement escrow : scannez ou saisissez le code secret du voyageur pour déclencher le payout.'}
+      </div>
       <button
         type="button"
         onClick={onOpenScanner}

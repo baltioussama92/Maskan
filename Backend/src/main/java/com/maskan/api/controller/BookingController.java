@@ -5,6 +5,7 @@ import com.maskan.api.dto.BookingResponse;
 import com.maskan.api.dto.BookingStatusUpdateRequest;
 import com.maskan.api.dto.CheckInVerificationResponse;
 import com.maskan.api.dto.UnavailableDateRangeResponse;
+import com.maskan.api.dto.BookingCancellationResponse;
 import com.maskan.api.dto.PaymentCheckoutResponse;
 import com.maskan.api.dto.VerifyCheckInRequest;
 import com.maskan.api.service.BookingService;
@@ -62,12 +63,26 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.updateStatus(id, request, principal.getUsername()));
     }
 
+    @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyRole('GUEST','TENANT','ADMIN')")
+    public ResponseEntity<BookingCancellationResponse> cancelReservation(@PathVariable String id,
+                                                                         @AuthenticationPrincipal UserDetails principal) {
+        return ResponseEntity.ok(bookingService.cancelReservation(id, principal.getUsername()));
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('GUEST','TENANT','ADMIN')")
-    public ResponseEntity<Void> cancel(@PathVariable String id,
-                                       @AuthenticationPrincipal UserDetails principal) {
-        bookingService.cancelBooking(id, principal.getUsername());
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<BookingCancellationResponse> cancel(@PathVariable String id,
+                                                              @AuthenticationPrincipal UserDetails principal) {
+        return ResponseEntity.ok(bookingService.cancelReservation(id, principal.getUsername()));
+    }
+
+    @PutMapping("/{id}/verify-checkin")
+    @PreAuthorize("hasAnyRole('HOST','PROPRIETOR')")
+    public ResponseEntity<CheckInVerificationResponse> verifyCheckInPut(@PathVariable String id,
+                                                                      @Valid @RequestBody VerifyCheckInRequest request,
+                                                                      @AuthenticationPrincipal UserDetails principal) {
+        return ResponseEntity.ok(bookingService.verifyCheckIn(id, request, principal.getUsername()));
     }
 
     @PostMapping("/{id}/verify-checkin")

@@ -10,6 +10,7 @@ import { bookingService } from '../services/bookingService'
 import { propertyService } from '../services/propertyService'
 import GuestCheckInQRCode from '../components/bookings/GuestCheckInQRCode'
 import EscrowPaymentModal from '../components/bookings/EscrowPaymentModal'
+import CancelConfirmationModal from '../components/bookings/CancelConfirmationModal'
 
 // ── Status config ────────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -100,6 +101,14 @@ function daysBetween(a, b) {
   return Math.round((new Date(b) - new Date(a)) / 86400000)
 }
 
+const CANCELLABLE_STATUSES = new Set([
+  'pending',
+  'confirmed',
+  'awaiting_payment',
+  'awaiting_checkin',
+  'paid_awaiting_checkin',
+])
+
 // ── Component ────────────────────────────────────────────────
 export default function BookingsPage({ user }) {
   const [filter, setFilter] = useState('all')
@@ -109,6 +118,9 @@ export default function BookingsPage({ user }) {
   const [loading, setLoading] = useState(true)
   const [paymentModalBooking, setPaymentModalBooking] = useState(null)
   const [paymentError, setPaymentError] = useState('')
+  const [cancelMessage, setCancelMessage] = useState('')
+  const [cancelModalBooking, setCancelModalBooking] = useState(null)
+  const [cancellingBookingId, setCancellingBookingId] = useState(null)
 
   const loadBookings = async (active = true, silent = false) => {
     if (!silent) {
@@ -214,6 +226,32 @@ export default function BookingsPage({ user }) {
     booking.status === 'awaiting_checkin' && booking.paymentMethod === 'CASH'
   )
 
+  const handleConfirmCancel = async (booking) => {
+    setCancelMessage('')
+    setPaymentError('')
+    setCancellingBookingId(booking.id)
+
+    try {
+      const result = await bookingService.cancelReservation(booking.id)
+      setAllBookings((prev) => prev.map((item) => (
+        item.id === booking.id ? { ...item, status: 'cancelled' } : item
+      )))
+      setCancelMessage(result.message)
+      setCancelModalBooking(null)
+
+      if (typeof result.guestTrustScore === 'number') {
+        window.dispatchEvent(new CustomEvent('user:trust-score-updated', {
+          detail: { trustScore: result.guestTrustScore },
+        }))
+      }
+    } catch (error) {
+      const apiMessage = error?.response?.data?.message || error?.message
+      setPaymentError(apiMessage || 'Impossible d\'annuler cette réservation.')
+    } finally {
+      setCancellingBookingId(null)
+    }
+  }
+
   if (!user) return <Navigate to="/" replace />
 
   // Filter by status
@@ -257,6 +295,12 @@ export default function BookingsPage({ user }) {
         {paymentError && (
           <div className="mb-4 px-4 py-3 rounded-xl border border-red-200 bg-red-50 text-sm text-red-600">
             {paymentError}
+          </div>
+        )}
+
+        {cancelMessage && (
+          <div className="mb-4 px-4 py-3 rounded-xl border border-emerald-200 bg-emerald-50 text-sm text-emerald-700">
+            {cancelMessage}
           </div>
         )}
 
@@ -480,6 +524,15 @@ export default function BookingsPage({ user }) {
                                   Pay Now
                                 </button>
                               )}
+                              {CANCELLABLE_STATUSES.has(b.status) && (
+                                <button
+                                  onClick={() => setCancelModalBooking(b)}
+                                  disabled={cancellingBookingId === b.id}
+                                  className="px-3.5 py-2 rounded-xl border border-red-200 bg-red-50 text-xs font-bold text-red-600 hover:bg-red-100 transition disabled:opacity-60"
+                                >
+                                  Annuler
+                                </button>
+                              )}
                             </div>
                           </div>
 
@@ -522,6 +575,17 @@ export default function BookingsPage({ user }) {
         booking={paymentModalBooking}
         onClose={() => setPaymentModalBooking(null)}
         onSuccess={handleEscrowPaymentSuccess}
+      />
+
+      <CancelConfirmationModal
+        open={Boolean(cancelModalBooking)}
+        booking={cancelModalBooking}
+        loading={Boolean(cancelModalBooking && cancellingBookingId === cancelModalBooking.id)}
+        onClose={() => {
+          if (cancellingBookingId) return
+          setCancelModalBooking(null)
+        }}
+        onConfirm={handleConfirmCancel}
       />
     </section>
   )

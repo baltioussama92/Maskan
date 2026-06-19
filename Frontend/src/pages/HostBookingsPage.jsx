@@ -93,6 +93,7 @@ export default function HostBookingsPage({ user }) {
           guests: b.guests ?? b.guestCount ?? 1,
           totalPrice: Number(b.totalPrice ?? (prop?.price || 0) * nights),
           status: (b.status || '').toLowerCase(),
+          paymentMethod: (b.paymentMethod || 'CARD').toUpperCase(),
           createdAt: b.createdAt || b.checkInDate,
           message: '',
         }
@@ -437,9 +438,10 @@ export default function HostBookingsPage({ user }) {
                               </div>
                             )}
 
-                            {b.status === 'paid_awaiting_checkin' && (
+                            {(b.status === 'paid_awaiting_checkin' || b.status === 'awaiting_checkin') && (
                               <HostBookingCard
                                 bookingId={b.id}
+                                paymentMethod={b.paymentMethod}
                                 onVerified={handleCheckInVerified}
                                 isScannerOpen={scannerBookingId === b.id}
                                 onOpenScanner={() => setScannerBookingId(b.id)}

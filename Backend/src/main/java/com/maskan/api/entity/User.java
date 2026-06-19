@@ -73,6 +73,9 @@ public class User {
     private Integer verificationLevel = 0;
 
     @Builder.Default
+    private Integer trustScore = 0;
+
+    @Builder.Default
     private String avatar = "";
 
     @Builder.Default

@@ -8,6 +8,7 @@ import type {
   CheckInVerificationResponse,
   PageResponse,
   PaymentCheckoutResponse,
+  BookingCancellationResponse,
   UnavailableDateRange,
   BookedDateRange,
 } from '../utils/contracts'
@@ -55,7 +56,17 @@ export const bookingService = {
   },
 
   async verifyCheckIn(bookingId: number | string, secretCode: string): Promise<CheckInVerificationResponse> {
-    const { data } = await apiClient.post<CheckInVerificationResponse>(ENDPOINTS.bookings.verifyCheckIn(bookingId), { secretCode })
+    const { data } = await apiClient.put<CheckInVerificationResponse>(
+      ENDPOINTS.bookings.verifyCheckIn(bookingId),
+      { secretCode },
+    )
+    return data
+  },
+
+  async cancelReservation(bookingId: number | string): Promise<BookingCancellationResponse> {
+    const { data } = await apiClient.post<BookingCancellationResponse>(
+      ENDPOINTS.bookings.cancel(bookingId),
+    )
     return data
   },
 }

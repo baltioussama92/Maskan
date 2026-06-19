@@ -67,6 +67,14 @@ public class Booking {
 
     private String checkInSecretCode;
 
+    private BigDecimal refundAmount;
+
+    private BigDecimal cancellationPenalty;
+
+    private String cancellationType;
+
+    private Instant cancelledAt;
+
     public LocalDate getStartDate() {
         return checkInDate;
     }

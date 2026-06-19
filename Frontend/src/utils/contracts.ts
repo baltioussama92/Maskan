@@ -55,6 +55,7 @@ export interface UserDto {
   identityStatus?: VerificationStatus
   verificationLevel?: 0 | 1 | 2 | 3
   rejectionReason?: string
+  trustScore?: number
   governmentIdFiles?: string[]
   otherAttachmentFiles?: string[]
   selfieFile?: string
@@ -264,8 +265,18 @@ export interface CheckInVerificationResponse {
   message: string
 }
 
-export interface BookingStatusUpdateRequest {
+export interface BookingCancellationResponse {
+  bookingId: string
   status: BookingStatus
+  cancellationType: 'FREE' | 'TAXED' | 'LATE'
+  totalPrice: number
+  refundAmount: number
+  penaltyAmount: number
+  daysUntilCheckIn: number
+  daysSinceReservation: number
+  trustScorePenalty: number
+  guestTrustScore?: number
+  message: string
 }
 
 export interface UnavailableDateRange {

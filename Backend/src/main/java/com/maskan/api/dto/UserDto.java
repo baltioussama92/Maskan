@@ -42,6 +42,7 @@ public class UserDto {
     Boolean phoneVerified;
     String identityStatus;
     Integer verificationLevel;
+    Integer trustScore;
     String rejectionReason;
     List<String> governmentIdFiles;
     List<String> otherAttachmentFiles;
