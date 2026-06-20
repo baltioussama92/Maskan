@@ -1,7 +1,13 @@
 import { apiClient } from '../api/apiClient'
 import { ENDPOINTS } from '../api/endpoints'
 import { buildQueryString } from '../api/query'
-import type { PageResponse, PropertyQuery, PropertyRequest, PropertyResponse } from '../utils/contracts'
+import type {
+  PageResponse,
+  PropertyQuery,
+  PropertyRequest,
+  PropertyResponse,
+  PropertySearchQuery,
+} from '../utils/contracts'
 
 export const propertyService = {
   async list(query: PropertyQuery = {}): Promise<PageResponse<PropertyResponse>> {
@@ -9,11 +15,21 @@ export const propertyService = {
       query.location != null && query.location !== '' ||
       query.minPrice != null ||
       query.maxPrice != null ||
-      query.available != null
+      query.available != null ||
+      query.checkInDate != null ||
+      query.checkOutDate != null
 
     const queryString = buildQueryString(query as Record<string, unknown>)
     const endpoint = hasSearchFilters ? ENDPOINTS.properties.search : ENDPOINTS.properties.list
     const { data } = await apiClient.get<PageResponse<PropertyResponse>>(`${endpoint}${queryString}`)
+    return data
+  },
+
+  async search(query: PropertySearchQuery = {}): Promise<PageResponse<PropertyResponse>> {
+    const queryString = buildQueryString(query as Record<string, unknown>)
+    const { data } = await apiClient.get<PageResponse<PropertyResponse>>(
+      `${ENDPOINTS.properties.heroSearch}${queryString}`,
+    )
     return data
   },
 

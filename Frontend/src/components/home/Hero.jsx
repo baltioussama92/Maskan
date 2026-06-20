@@ -253,7 +253,7 @@ export default function Hero({ onSearch }) {
           <motion.div variants={itemVar} className="relative z-30 w-full flex justify-center">
             <SearchBar onSearch={(params) => {
               const query = new URLSearchParams()
-              if (params.location) query.set('location', params.location)
+              if (params.location) query.set('city', params.location)
               if (params.checkIn) query.set('checkIn', params.checkIn)
               if (params.checkOut) query.set('checkOut', params.checkOut)
               if (params.guests) query.set('guests', String(params.guests))
@@ -269,7 +269,7 @@ export default function Hero({ onSearch }) {
                 key={city}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.96 }}
-                onClick={() => navigate(`/explorer?location=${encodeURIComponent(city)}`)}
+                onClick={() => navigate(`/explorer?city=${encodeURIComponent(city)}`)}
                 className="px-3.5 py-1.5 rounded-full text-xs font-medium
                            bg-primary-50/10 backdrop-blur-sm border border-primary-200/20
                            text-primary-50/80 hover:bg-primary-50/20 hover:text-primary-50

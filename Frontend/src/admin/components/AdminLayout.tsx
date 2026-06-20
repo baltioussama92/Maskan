@@ -1,9 +1,9 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 import { useAdminAuth } from '../hooks/useAdminAuth'
+import { adminEnter } from './ui'
 
 interface ToastItem {
   id: number
@@ -122,14 +122,9 @@ export default function AdminLayout() {
             onNavigateExplore={goExplore}
             onLogout={handleLogout}
           />
-          <motion.main
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.28, ease: 'easeOut' }}
-            className="flex-1 p-4 md:p-6"
-          >
+          <main className={`flex-1 p-4 md:p-6 ${adminEnter()}`}>
             <Outlet />
-          </motion.main>
+          </main>
         </div>
       </div>
       <ToastStack toasts={toasts} />

@@ -27,6 +27,11 @@ public interface PropertyService {
                                   Integer bedrooms,
                                   List<String> amenities,
                                   Pageable pageable);
+    Page<PropertyResponse> searchAvailable(String city,
+                                           LocalDate startDate,
+                                           LocalDate endDate,
+                                           Integer guests,
+                                           Pageable pageable);
     List<PropertyResponse> findPendingApproval();
 }
 

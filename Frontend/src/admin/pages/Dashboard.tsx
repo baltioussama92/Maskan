@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AlertTriangle, CheckCheck, CircleDollarSign, Clock3, Headset, ShieldAlert, TrendingUp, UserRound } from 'lucide-react'
 import Table, { type TableColumn } from '../components/Table'
 import { adminApi, type ActivityRow, type DashboardStats } from '../services/adminApi'
-import { MetricCard, MiniBarChart, MiniLineChart, SectionTabs, SurfaceCard } from '../components/ui'
+import { MetricCard, MiniBarChart, MiniLineChart, SectionTabs, SurfaceCard, adminEnter } from '../components/ui'
 import { apiClient } from '../../api/apiClient'
 import { ENDPOINTS } from '../../api/endpoints'
 
@@ -173,7 +173,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className={`flex flex-wrap items-center justify-between gap-3 ${adminEnter(0)}`}>
         <div>
           <h2 className="text-2xl font-black tracking-tight text-[#2F241D]">Operations Dashboard</h2>
           <p className="text-sm text-[#6F5C4D]">Premium control center for rentals, moderation, finance, and platform quality.</p>
@@ -190,45 +190,53 @@ export default function Dashboard() {
       </div>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {cards.map((card) => (
-          <MetricCard
-            key={card.label}
-            label={card.label}
-            value={card.value}
-            delta={card.delta}
-            tone={card.tone}
-            icon={card.icon}
-          />
+        {cards.map((card, index) => (
+          <div key={card.label} className={adminEnter(index + 1)}>
+            <MetricCard
+              label={card.label}
+              value={card.value}
+              delta={card.delta}
+              tone={card.tone}
+              icon={card.icon}
+            />
+          </div>
         ))}
       </section>
 
       {panel === 'overview' ? (
         <>
           <section className="grid gap-4 xl:grid-cols-3">
-            <SurfaceCard title="Revenue Trend" subtitle="Monthly gross revenue" className="xl:col-span-2">
-              <MiniLineChart points={revenueTrend} />
-            </SurfaceCard>
+            <div className={`xl:col-span-2 ${adminEnter(5)}`}>
+              <SurfaceCard title="Revenue Trend" subtitle="Monthly gross revenue">
+                <MiniLineChart points={revenueTrend} />
+              </SurfaceCard>
+            </div>
 
-            <SurfaceCard title="Most Booked Cities" subtitle="Top destinations by booking volume">
-              <MiniBarChart
-                data={cityRows.map((item) => item.bookings)}
-                labels={cityRows.map((item) => item.city)}
-              />
-            </SurfaceCard>
+            <div className={adminEnter(6)}>
+              <SurfaceCard title="Most Booked Cities" subtitle="Top destinations by booking volume">
+                <MiniBarChart
+                  data={cityRows.map((item) => item.bookings)}
+                  labels={cityRows.map((item) => item.city)}
+                />
+              </SurfaceCard>
+            </div>
           </section>
 
           <section className="grid gap-4 xl:grid-cols-3">
-            <SurfaceCard title="Recent Activity" subtitle="Moderation and operations feed" className="xl:col-span-2">
-              <Table
-                columns={activityColumns}
-                rows={activity}
-                rowKey={(row) => row.id}
-                loading={loading}
-                emptyText="No recent activity available."
-              />
-            </SurfaceCard>
+            <div className={`xl:col-span-2 ${adminEnter(7)}`}>
+              <SurfaceCard title="Recent Activity" subtitle="Moderation and operations feed">
+                <Table
+                  columns={activityColumns}
+                  rows={activity}
+                  rowKey={(row) => row.id}
+                  loading={loading}
+                  emptyText="No recent activity available."
+                />
+              </SurfaceCard>
+            </div>
 
-            <SurfaceCard title="Quick Actions" subtitle="High-impact operations shortcuts">
+            <div className={adminEnter(8)}>
+              <SurfaceCard title="Quick Actions" subtitle="High-impact operations shortcuts">
               <div className="space-y-2.5">
                 <QuickAction label="Approve Verification" tone="success" onClick={() => navigate('/admin/guest-verifications')} />
                 <QuickAction label="Review Reports" tone="danger" onClick={() => navigate('/admin/reports')} />
@@ -244,24 +252,31 @@ export default function Dashboard() {
                 <p className="mt-1">{disputeCount} disputes and {supportTicketCount} support tickets need action in the next 24 hours.</p>
               </div>
             </SurfaceCard>
+            </div>
           </section>
         </>
       ) : (
         <section className="grid gap-4 lg:grid-cols-2">
-          <SurfaceCard title="Booking Trends" subtitle="Bookings per month">
-            <MiniLineChart points={bookingTrend} />
-          </SurfaceCard>
+          <div className={adminEnter(5)}>
+            <SurfaceCard title="Booking Trends" subtitle="Bookings per month">
+              <MiniLineChart points={bookingTrend} />
+            </SurfaceCard>
+          </div>
 
-          <SurfaceCard title="User Growth" subtitle="New users per month">
-            <MiniLineChart points={growthTrend} />
-          </SurfaceCard>
+          <div className={adminEnter(6)}>
+            <SurfaceCard title="User Growth" subtitle="New users per month">
+              <MiniLineChart points={growthTrend} />
+            </SurfaceCard>
+          </div>
 
-          <SurfaceCard title="Most Booked Cities" subtitle="Demand concentration by city" className="lg:col-span-2">
-            <MiniBarChart
-              data={cityRows.map((item) => item.bookings)}
-              labels={cityRows.map((item) => `${item.city} ${item.growth}`)}
-            />
-          </SurfaceCard>
+          <div className={`lg:col-span-2 ${adminEnter(7)}`}>
+            <SurfaceCard title="Most Booked Cities" subtitle="Demand concentration by city">
+              <MiniBarChart
+                data={cityRows.map((item) => item.bookings)}
+                labels={cityRows.map((item) => `${item.city} ${item.growth}`)}
+              />
+            </SurfaceCard>
+          </div>
         </section>
       )}
     </div>
@@ -288,7 +303,7 @@ function QuickAction({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${toneClass[tone]}`}
+      className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition-colors duration-200 ${toneClass[tone]}`}
     >
       {label}
     </button>

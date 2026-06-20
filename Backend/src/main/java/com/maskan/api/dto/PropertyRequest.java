@@ -32,6 +32,7 @@ public class PropertyRequest {
     String type;
     String badge;
     Integer bedrooms;
+    Integer maxGuests;
     Integer bathrooms;
     Integer area;
     String houseRules;

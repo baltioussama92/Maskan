@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import { motion } from 'framer-motion'
 import { cx } from './ui'
 
 interface CardProps {
@@ -12,10 +11,7 @@ interface CardProps {
 
 export default function Card({ title, subtitle, rightSlot, className = '', children }: CardProps) {
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.24, ease: 'easeOut' }}
+    <section
       className={cx(
         'rounded-3xl border border-[#E1D2C0] bg-gradient-to-b from-[#FFFFFF] to-[#FFFCF8] p-5 shadow-[0_12px_28px_rgba(58,45,40,0.08)]',
         className,
@@ -31,6 +27,6 @@ export default function Card({ title, subtitle, rightSlot, className = '', child
         </header>
       )}
       {children}
-    </motion.section>
+    </section>
   )
 }

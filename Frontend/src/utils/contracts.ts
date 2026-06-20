@@ -165,6 +165,7 @@ export interface PropertyResponse {
   currency?: string
   period?: string
   bedrooms?: number
+  maxGuests?: number
   bathrooms?: number
   area?: number
   houseRules?: string
@@ -187,6 +188,18 @@ export interface PropertyQuery {
   maxPrice?: number | string
   available?: boolean
   type?: string
+  checkInDate?: string
+  checkOutDate?: string
+  page?: number
+  size?: number
+  sort?: string
+}
+
+export interface PropertySearchQuery {
+  city?: string
+  startDate?: string
+  endDate?: string
+  guests?: number
   page?: number
   size?: number
   sort?: string

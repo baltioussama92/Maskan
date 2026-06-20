@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
 import Card from '../components/Card'
 import Table, { type TableColumn } from '../components/Table'
 import type { HostDemand } from '../services/adminApi'
 import { getHostDemands, approveHostDemand, rejectHostDemand, getHostDemandRowKey } from '../services/adminApi'
 import { useAdminToast } from '../components/AdminLayout'
 import HostDemandDetailsModal from '../components/HostDemandDetailsModal'
+import { adminEnter } from '../components/ui'
 
 export default function HostDemandsPage() {
   const [demands, setDemands] = useState<HostDemand[]>([])
@@ -183,72 +183,51 @@ export default function HostDemandsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
+      <div className={adminEnter(0)}>
         <h1 className="text-2xl font-bold text-[#3A2D28]">Host Demands</h1>
         <p className="mt-1 text-sm text-[#6B5D54]">
           Review and manage user requests to become property hosts
         </p>
-      </motion.div>
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
+        <div className={adminEnter(1)}>
           <Card className="p-4">
             <div className="text-sm font-medium text-[#6B5D54]">Total Demands</div>
             <div className="mt-2 text-3xl font-bold text-[#3A2D28]">{stats.total}</div>
           </Card>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12 }}
-        >
+        <div className={adminEnter(2)}>
           <Card className="p-4 border-l-4 border-amber-500">
             <div className="text-sm font-medium text-[#6B5D54]">Pending</div>
             <div className="mt-2 text-3xl font-bold text-amber-600">{stats.pending}</div>
           </Card>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.14 }}
-        >
+        <div className={adminEnter(3)}>
           <Card className="p-4 border-l-4 border-green-500">
             <div className="text-sm font-medium text-[#6B5D54]">Approved</div>
             <div className="mt-2 text-3xl font-bold text-green-600">{stats.approved}</div>
           </Card>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.16 }}
-        >
+        <div className={adminEnter(4)}>
           <Card className="p-4 border-l-4 border-red-500">
             <div className="text-sm font-medium text-[#6B5D54]">Rejected</div>
             <div className="mt-2 text-3xl font-bold text-red-600">{stats.rejected}</div>
           </Card>
-        </motion.div>
+        </div>
       </div>
 
       {/* Filter */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.18 }}
-        className="flex gap-2 border-b border-[#D4C4B9] pb-4"
-      >
+      <div className={`flex gap-2 border-b border-[#D4C4B9] pb-4 ${adminEnter(5)}`}>
         {(['all', 'pending', 'approved', 'rejected'] as const).map(status => (
           <button
             key={status}
             onClick={() => setFilterStatus(status)}
-            className={`px-4 py-2 rounded-lg transition capitalize ${
+            className={`px-4 py-2 rounded-lg transition-colors duration-200 capitalize ${
               filterStatus === status
                 ? 'bg-[#3A2D28] text-white'
                 : 'bg-[#E8DED2] text-[#3A2D28] hover:bg-[#D4C4B9]'
@@ -257,14 +236,10 @@ export default function HostDemandsPage() {
             {status}
           </button>
         ))}
-      </motion.div>
+      </div>
 
       {/* Table */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
+      <div className={adminEnter(6)}>
         <Card>
           <Table
             columns={columns}
@@ -274,7 +249,7 @@ export default function HostDemandsPage() {
             emptyText={filterStatus === 'all' ? 'No host demands found' : `No ${filterStatus} host demands found`}
           />
         </Card>
-      </motion.div>
+      </div>
 
       {/* Details Modal */}
       {showDetailsModal && selectedDemand && (

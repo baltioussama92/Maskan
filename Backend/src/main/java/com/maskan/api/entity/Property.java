@@ -64,6 +64,8 @@ public class Property {
     private String badge;
     @Indexed
     private Integer bedrooms;
+    @Indexed
+    private Integer maxGuests;
     private Integer bathrooms;
     private Integer area;
     private String houseRules;

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { adminApi, type ListingDetails } from '../services/adminApi'
+import { adminModalBackdrop, adminModalPanel } from './ui'
 
 interface ListingDetailsModalProps {
   listingId: number | null
@@ -153,8 +154,8 @@ export default function ListingDetailsModal({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white dark:bg-slate-900">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 ${adminModalBackdrop}`}>
+      <div className={`max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 ${adminModalPanel}`}>
         {/* Header */}
         <div className="sticky top-0 border-b border-gray-200 bg-white px-6 py-4 flex items-center justify-between dark:border-slate-700 dark:bg-slate-900">
           <h2 className="text-xl font-bold text-[#3A2D28] dark:text-slate-100">

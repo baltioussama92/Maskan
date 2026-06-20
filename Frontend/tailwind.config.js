@@ -60,10 +60,25 @@ export default {
           '0%, 100%': { transform: 'translateY(0px)' },
           '50%':      { transform: 'translateY(-8px)' },
         },
+        'admin-fade-in-up': {
+          '0%': { opacity: '0', transform: 'translateY(1rem)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'admin-fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'admin-modal-in': {
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
       },
       animation: {
         shimmer: 'shimmer 2.5s infinite linear',
         float:   'float 4s ease-in-out infinite',
+        'admin-fade-in-up': 'admin-fade-in-up 300ms ease-out forwards',
+        'admin-fade-in': 'admin-fade-in 200ms ease-out forwards',
+        'admin-modal-in': 'admin-modal-in 200ms ease-out forwards',
       },
     },
   },

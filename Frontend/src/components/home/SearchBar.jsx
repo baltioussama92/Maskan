@@ -69,7 +69,9 @@ function LocationDropdown({ value, onChange, onClose, cities }) {
         />
       </div>
       <ul className="max-h-52 overflow-y-auto py-1">
-        {filtered.map((city) => (
+        {filtered.length === 0 ? (
+          <li className="px-4 py-3 text-sm text-primary-400">Aucune ville trouvée</li>
+        ) : filtered.map((city) => (
           <li key={city}>
             <button
               type="button"
@@ -196,6 +198,7 @@ export default function SearchBar({ onSearch, className = '' }) {
   const [kids,      setKids]      = useState(0)
   const [openPanel, setOpenPanel] = useState(null) // 'location' | 'checkin' | 'checkout' | 'guests'
   const [cities, setCities] = useState([])
+  const [locationError, setLocationError] = useState('')
 
   const barRef = useRef(null)
 
@@ -237,7 +240,15 @@ export default function SearchBar({ onSearch, className = '' }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     setOpenPanel(null)
-    onSearch?.({ location, checkIn, checkOut, guests: adults + kids })
+
+    if (!location.trim()) {
+      setLocationError('Veuillez sélectionner une destination.')
+      setOpenPanel('location')
+      return
+    }
+
+    setLocationError('')
+    onSearch?.({ location: location.trim(), checkIn, checkOut, guests: adults + kids })
   }
 
   return (
@@ -263,12 +274,20 @@ export default function SearchBar({ onSearch, className = '' }) {
           {openPanel === 'location' && (
             <LocationDropdown
               value={location}
-              onChange={setLocation}
+              onChange={(city) => {
+                setLocation(city)
+                setLocationError('')
+              }}
               onClose={() => setOpenPanel(null)}
               cities={cities}
             />
           )}
         </AnimatePresence>
+        {locationError && (
+          <p className="absolute left-3 top-full mt-1 text-xs font-semibold text-red-200 md:text-red-600">
+            {locationError}
+          </p>
+        )}
       </div>
 
       <Divider />

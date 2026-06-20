@@ -35,6 +35,17 @@ import java.util.stream.Collectors;
 @Transactional
 public class PropertyServiceImpl implements PropertyService {
 
+    private static final List<BookingStatus> ACTIVE_BOOKING_STATUSES = List.of(
+            BookingStatus.PENDING,
+            BookingStatus.CONFIRMED,
+            BookingStatus.ACCEPTED,
+            BookingStatus.AWAITING_PAYMENT,
+            BookingStatus.AWAITING_CHECKIN,
+            BookingStatus.PAID_AWAITING_CHECKIN
+    );
+
+    private static final int DEFAULT_MAX_GUESTS = 4;
+
     private final PropertyRepository propertyRepository;
     private final UserRepository userRepository;
     private final MongoTemplate mongoTemplate;
@@ -57,6 +68,7 @@ public class PropertyServiceImpl implements PropertyService {
             .currency(request.getCurrency() == null || request.getCurrency().isBlank() ? "USD" : request.getCurrency())
             .badge(request.getBadge())
             .bedrooms(request.getBedrooms())
+            .maxGuests(resolveMaxGuests(request.getMaxGuests(), request.getBedrooms()))
             .bathrooms(request.getBathrooms())
             .area(request.getArea())
             .houseRules(request.getHouseRules())
@@ -95,6 +107,7 @@ public class PropertyServiceImpl implements PropertyService {
         }
         property.setBadge(request.getBadge());
         property.setBedrooms(request.getBedrooms());
+        property.setMaxGuests(resolveMaxGuests(request.getMaxGuests(), request.getBedrooms()));
         property.setBathrooms(request.getBathrooms());
         property.setArea(request.getArea());
         property.setHouseRules(request.getHouseRules());
@@ -184,18 +197,7 @@ public class PropertyServiceImpl implements PropertyService {
         }
 
         if (checkInDate != null && checkOutDate != null && checkOutDate.isAfter(checkInDate)) {
-            Query bookingOverlapQuery = new Query();
-            bookingOverlapQuery.addCriteria(new Criteria().andOperator(
-                Criteria.where("status").in(BookingStatus.CONFIRMED),
-                    Criteria.where("checkInDate").lt(checkOutDate),
-                    Criteria.where("checkOutDate").gt(checkInDate)
-            ));
-
-            Set<String> unavailableListingIds = mongoTemplate.find(bookingOverlapQuery, Booking.class)
-                    .stream()
-                    .map(Booking::getListingId)
-                    .filter(id -> id != null && !id.isBlank())
-                    .collect(Collectors.toSet());
+            Set<String> unavailableListingIds = findUnavailableListingIds(checkInDate, checkOutDate);
 
             if (!unavailableListingIds.isEmpty()) {
                 criteriaList.add(Criteria.where("_id").nin(unavailableListingIds));
@@ -216,6 +218,107 @@ public class PropertyServiceImpl implements PropertyService {
                 .toList();
 
         return new PageImpl<>(responses, effectivePageable, total);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PropertyResponse> searchAvailable(String city,
+                                                  LocalDate startDate,
+                                                  LocalDate endDate,
+                                                  Integer guests,
+                                                  Pageable pageable) {
+        List<Criteria> criteriaList = new ArrayList<>();
+
+        criteriaList.add(Criteria.where("available").is(true));
+        criteriaList.add(new Criteria().orOperator(
+                Criteria.where("pendingApproval").is(false),
+                Criteria.where("pendingApproval").exists(false)
+        ));
+
+        if (city != null && !city.isBlank()) {
+            criteriaList.add(Criteria.where("location").regex("^" + java.util.regex.Pattern.quote(city.trim()) + "$", "i"));
+        }
+
+        if (guests != null && guests > 0) {
+            criteriaList.add(buildGuestCapacityCriteria(guests));
+        }
+
+        if (startDate != null && endDate != null && endDate.isAfter(startDate)) {
+            Set<String> unavailableListingIds = findUnavailableListingIds(startDate, endDate);
+            if (!unavailableListingIds.isEmpty()) {
+                criteriaList.add(Criteria.where("_id").nin(unavailableListingIds));
+            }
+        }
+
+        Query query = new Query();
+        if (!criteriaList.isEmpty()) {
+            query.addCriteria(new Criteria().andOperator(criteriaList.toArray(new Criteria[0])));
+        }
+
+        Pageable effectivePageable = pageable == null ? Pageable.unpaged() : pageable;
+        query.with(effectivePageable);
+
+        List<Property> results = mongoTemplate.find(query, Property.class);
+        long total = mongoTemplate.count(Query.of(query).limit(-1).skip(-1), Property.class);
+        List<PropertyResponse> responses = results.stream()
+                .map(this::toResponse)
+                .toList();
+
+        return new PageImpl<>(responses, effectivePageable, total);
+    }
+
+    private Set<String> findUnavailableListingIds(LocalDate startDate, LocalDate endDate) {
+        Query bookingOverlapQuery = new Query();
+        bookingOverlapQuery.addCriteria(new Criteria().andOperator(
+                Criteria.where("status").in(ACTIVE_BOOKING_STATUSES),
+                Criteria.where("checkInDate").lt(endDate),
+                Criteria.where("checkOutDate").gt(startDate)
+        ));
+
+        return mongoTemplate.find(bookingOverlapQuery, Booking.class)
+                .stream()
+                .map(Booking::getListingId)
+                .filter(id -> id != null && !id.isBlank())
+                .collect(Collectors.toSet());
+    }
+
+    private Criteria buildGuestCapacityCriteria(int guests) {
+        List<Criteria> capacityOptions = new ArrayList<>();
+        capacityOptions.add(Criteria.where("maxGuests").gte(guests));
+
+        Criteria legacyWithBedrooms = new Criteria().andOperator(
+                new Criteria().orOperator(
+                        Criteria.where("maxGuests").exists(false),
+                        Criteria.where("maxGuests").is(null)
+                ),
+                Criteria.where("bedrooms").gte(Math.max(1, (int) Math.ceil(guests / 2.0)))
+        );
+        capacityOptions.add(legacyWithBedrooms);
+
+        if (guests <= DEFAULT_MAX_GUESTS) {
+            capacityOptions.add(new Criteria().andOperator(
+                    new Criteria().orOperator(
+                            Criteria.where("maxGuests").exists(false),
+                            Criteria.where("maxGuests").is(null)
+                    ),
+                    new Criteria().orOperator(
+                            Criteria.where("bedrooms").exists(false),
+                            Criteria.where("bedrooms").is(null)
+                    )
+            ));
+        }
+
+        return new Criteria().orOperator(capacityOptions.toArray(new Criteria[0]));
+    }
+
+    private Integer resolveMaxGuests(Integer maxGuests, Integer bedrooms) {
+        if (maxGuests != null && maxGuests > 0) {
+            return maxGuests;
+        }
+        if (bedrooms != null && bedrooms > 0) {
+            return Math.max(2, bedrooms * 2);
+        }
+        return DEFAULT_MAX_GUESTS;
     }
 
     @Override
@@ -243,6 +346,9 @@ public class PropertyServiceImpl implements PropertyService {
             .currency(property.getCurrency())
             .badge(property.getBadge())
             .bedrooms(property.getBedrooms())
+            .maxGuests(property.getMaxGuests() != null
+                    ? property.getMaxGuests()
+                    : resolveMaxGuests(null, property.getBedrooms()))
             .bathrooms(property.getBathrooms())
             .area(property.getArea())
             .houseRules(property.getHouseRules())

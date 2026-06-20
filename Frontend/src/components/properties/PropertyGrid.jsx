@@ -37,6 +37,25 @@ const normalizeProperty = (p) => ({
   period: p.period || (p.pricePerNight != null ? 'nuit' : 'mois'),
 })
 
+function hasActiveSearchFilters(searchFilters) {
+  if (!searchFilters) return false
+  return Boolean(
+    searchFilters.city ||
+    searchFilters.checkIn ||
+    searchFilters.checkOut ||
+    (searchFilters.guests != null && searchFilters.guests > 0),
+  )
+}
+
+function buildSearchQuery(searchFilters, page, size) {
+  const query = { page, size }
+  if (searchFilters?.city) query.city = searchFilters.city
+  if (searchFilters?.checkIn) query.startDate = searchFilters.checkIn
+  if (searchFilters?.checkOut) query.endDate = searchFilters.checkOut
+  if (searchFilters?.guests != null && searchFilters.guests > 0) query.guests = searchFilters.guests
+  return query
+}
+
 export default function PropertyGrid({ title = 'Propriétés en vedette', searchResult = null, searchFilters = null, user = null, onAuthClick = null }) {
   const [sort,    setSort]    = useState('default')
   const [type,    setType]    = useState('Tous')
@@ -48,6 +67,7 @@ export default function PropertyGrid({ title = 'Propriétés en vedette', search
   const [hasMore, setHasMore] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const itemsPerPage = 12
+  const isSearchMode = hasActiveSearchFilters(searchFilters)
 
   useEffect(() => {
     let active = true
@@ -61,7 +81,9 @@ export default function PropertyGrid({ title = 'Propriétés en vedette', search
       }
 
       try {
-        const data = await propertyService.list({ page: nextPage, size: itemsPerPage })
+        const data = isSearchMode
+          ? await propertyService.search(buildSearchQuery(searchFilters, nextPage, itemsPerPage))
+          : await propertyService.list({ page: nextPage, size: itemsPerPage })
         if (!active) return
         const nextItems = (data.content || []).map(normalizeProperty)
         setApiData((prev) => {
@@ -75,7 +97,10 @@ export default function PropertyGrid({ title = 'Propriétés en vedette', search
         const loaded = (nextPage + 1) * itemsPerPage
         setHasMore(loaded < total)
       } catch {
-        // Keep existing data on failure.
+        if (active && replace) {
+          setApiData([])
+          setHasMore(false)
+        }
       } finally {
         if (!active) return
         setLoading(false)
@@ -86,7 +111,7 @@ export default function PropertyGrid({ title = 'Propriétés en vedette', search
     loadPage(0, true)
 
     return () => { active = false }
-  }, [])
+  }, [searchFilters?.city, searchFilters?.checkIn, searchFilters?.checkOut, searchFilters?.guests, isSearchMode])
 
   useEffect(() => {
     if (!user) {
@@ -292,7 +317,11 @@ export default function PropertyGrid({ title = 'Propriétés en vedette', search
             onClick={() => {
               if (loadingMore) return
               setLoadingMore(true)
-              propertyService.list({ page: page + 1, size: itemsPerPage })
+              const fetchNext = isSearchMode
+                ? propertyService.search(buildSearchQuery(searchFilters, page + 1, itemsPerPage))
+                : propertyService.list({ page: page + 1, size: itemsPerPage })
+
+              fetchNext
                 .then((data) => {
                   const nextItems = (data.content || []).map(normalizeProperty)
                   setApiData((prev) => Array.isArray(prev) ? [...prev, ...nextItems] : nextItems)

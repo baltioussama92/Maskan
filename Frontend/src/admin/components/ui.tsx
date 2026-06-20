@@ -1,9 +1,30 @@
 import { type ReactNode } from 'react'
-import { motion } from 'framer-motion'
 
 export type Tone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
 
 export const cx = (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(' ')
+
+/** Mount animation — opacity + translateY only, respects prefers-reduced-motion */
+export function adminEnter(staggerIndex = 0) {
+  return cx(
+    'transform-gpu opacity-0 motion-safe:animate-admin-fade-in-up motion-reduce:animate-none motion-reduce:opacity-100',
+    staggerIndex > 0 && `motion-safe:[animation-delay:${staggerIndex * 60}ms]`,
+  )
+}
+
+export const adminModalPanel = cx(
+  'transform-gpu opacity-0 motion-safe:animate-admin-modal-in motion-reduce:animate-none motion-reduce:opacity-100',
+)
+
+export const adminModalBackdrop = cx(
+  'opacity-0 motion-safe:animate-admin-fade-in motion-reduce:animate-none motion-reduce:opacity-100',
+)
+
+export const adminTableRowHover = cx(
+  'origin-center transform-gpu transition-[transform,background-color] duration-200 ease-out',
+  'hover:bg-gray-50/50 hover:scale-[1.01]',
+  'motion-reduce:transform-none dark:hover:bg-slate-800/60',
+)
 
 const toneClass: Record<Tone, string> = {
   neutral: 'bg-[#F3ECE3] text-[#46372E] border-[#E0D0BC]',
@@ -35,10 +56,7 @@ export function SurfaceCard({
   className?: string
 }) {
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
+    <section
       className={cx(
         'rounded-3xl border border-[#E2D3C0] bg-gradient-to-b from-[#FFFFFF] to-[#FFFCF8] p-5 shadow-[0_12px_26px_rgba(52,37,24,0.08)] dark:border-slate-700 dark:bg-gradient-to-b dark:from-slate-900 dark:to-slate-800 dark:shadow-[0_12px_26px_rgba(2,6,23,0.6)]',
         className,
@@ -54,7 +72,7 @@ export function SurfaceCard({
         </header>
       )}
       {children}
-    </motion.section>
+    </section>
   )
 }
 
@@ -110,7 +128,7 @@ export function SectionTabs<T extends string>({
           type="button"
           onClick={() => onChange(tab.key)}
           className={cx(
-            'rounded-xl border px-3.5 py-2 text-sm font-semibold transition',
+            'rounded-xl border px-3.5 py-2 text-sm font-semibold transition-colors duration-200',
             tab.key === value
               ? 'border-[#2F241D] bg-[#2F241D] text-[#FFFDF8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100'
               : 'border-[#DAC9B4] bg-[#F9F3EA] text-[#5E4C3E] hover:bg-[#EFE4D7] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700',

@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import type { HostDemand } from '../services/adminApi'
 import ImageLightbox, { ClickableImagePreview } from './ImageLightbox'
+import { adminModalBackdrop, adminModalPanel } from './ui'
 import { toAssetUrl } from '../utils/assetUrl'
 
 interface HostDemandDetailsModalProps {
@@ -54,20 +54,13 @@ export default function HostDemandDetailsModal({
   }
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+    <>
+      <div
+        className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 ${adminModalBackdrop}`}
         onClick={onClose}
       >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl dark:bg-slate-900 dark:shadow-[0_20px_45px_rgba(2,6,23,0.6)]"
+        <div
+          className={`max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl dark:bg-slate-900 dark:shadow-[0_20px_45px_rgba(2,6,23,0.6)] ${adminModalPanel}`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -293,8 +286,8 @@ export default function HostDemandDetailsModal({
               </div>
             </section>
           </div>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
 
       {lightbox ? (
         <ImageLightbox
@@ -303,6 +296,6 @@ export default function HostDemandDetailsModal({
           onClose={() => setLightbox(null)}
         />
       ) : null}
-    </AnimatePresence>
+    </>
   )
 }

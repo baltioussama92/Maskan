@@ -3,7 +3,7 @@ import Modal from '../components/Modal'
 import Table, { type TableColumn } from '../components/Table'
 import { useAdminToast } from '../components/AdminLayout'
 import { adminApi, getHostDemands, getHostDemandRowKey, type AdminUser, type HostDemand } from '../services/adminApi'
-import { SectionTabs, StatusBadge, SurfaceCard } from '../components/ui'
+import { SectionTabs, StatusBadge, SurfaceCard, adminEnter } from '../components/ui'
 
 function toAssetUrl(path: string): string {
   if (!path) return ''
@@ -261,6 +261,7 @@ export default function GuestVerificationsPage() {
 
   return (
     <div className="space-y-6">
+      <div className={adminEnter(0)}>
       <SurfaceCard
         title="Verification Center"
         subtitle="Guest identity checks and host onboarding approvals"
@@ -293,6 +294,7 @@ export default function GuestVerificationsPage() {
           />
         )}
       </SurfaceCard>
+      </div>
 
       <Modal
         open={Boolean(selectedGuest) && Boolean(action)}

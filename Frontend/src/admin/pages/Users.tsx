@@ -5,7 +5,7 @@ import Modal from '../components/Modal'
 import Table, { type TableColumn } from '../components/Table'
 import { useAdminToast } from '../components/AdminLayout'
 import { adminApi, type AdminUser } from '../services/adminApi'
-import { EmptyState, FilterSelect, MetricCard, SearchField, StatusBadge, SurfaceCard } from '../components/ui'
+import { EmptyState, FilterSelect, MetricCard, SearchField, StatusBadge, SurfaceCard, adminEnter } from '../components/ui'
 
 const pageSize = 8
 
@@ -179,12 +179,21 @@ export default function Users() {
   return (
     <div className="space-y-6">
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Total Users" value={stats.total} icon={<UserRoundCheck size={18} />} />
-        <MetricCard label="Hosts" value={stats.hosts} tone="info" icon={<CheckCircle2 size={18} />} />
-        <MetricCard label="Guests" value={stats.guests} tone="neutral" icon={<CheckCircle2 size={18} />} />
-        <MetricCard label="Banned" value={stats.banned} tone="danger" icon={<Ban size={18} />} />
+        <div className={adminEnter(0)}>
+          <MetricCard label="Total Users" value={stats.total} icon={<UserRoundCheck size={18} />} />
+        </div>
+        <div className={adminEnter(1)}>
+          <MetricCard label="Hosts" value={stats.hosts} tone="info" icon={<CheckCircle2 size={18} />} />
+        </div>
+        <div className={adminEnter(2)}>
+          <MetricCard label="Guests" value={stats.guests} tone="neutral" icon={<CheckCircle2 size={18} />} />
+        </div>
+        <div className={adminEnter(3)}>
+          <MetricCard label="Banned" value={stats.banned} tone="danger" icon={<Ban size={18} />} />
+        </div>
       </section>
 
+      <div className={adminEnter(4)}>
       <SurfaceCard title="User Management" subtitle="Search, filter, review and moderate all platform users">
         <div className="mb-4 grid gap-2 md:grid-cols-[1.5fr,1fr,1fr]">
           <SearchField value={search} onChange={setSearch} placeholder="Search by name, email, username" />
@@ -223,6 +232,7 @@ export default function Users() {
           />
         )}
       </SurfaceCard>
+      </div>
 
       <Modal
         open={Boolean(selected)}

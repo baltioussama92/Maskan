@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { adminTableRowHover } from './ui'
 
 export interface TableColumn<T> {
   key: string
@@ -31,7 +32,7 @@ export default function Table<T>({
   return (
     <div className="overflow-hidden rounded-2xl border border-[#DCCCB8]/70 bg-[#FFFFFF] shadow-[0_10px_24px_rgba(58,45,40,0.06)] dark:border-slate-700 dark:bg-slate-900">
       <div className="overflow-x-auto">
-      <table className="min-w-full border-collapse">
+      <table className="min-w-full border-separate border-spacing-0">
         <thead>
           <tr className="bg-[#F7EFE6] text-left dark:bg-slate-800">
             {columns.map((column) => (
@@ -59,7 +60,7 @@ export default function Table<T>({
             </tr>
           ) : (
             rows.map((row) => (
-              <tr key={rowKey(row)} className="border-t border-[#E8DCCD] transition-colors hover:bg-[#FFFAF3] dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800/60">
+              <tr key={rowKey(row)} className={`border-t border-[#E8DCCD] dark:border-slate-700 dark:bg-slate-900 ${adminTableRowHover}`}>
                 {columns.map((column) => (
                   <td key={`${rowKey(row)}-${column.key}`} className={`px-4 py-3 text-sm text-[#2F241F] dark:text-slate-100 ${column.className || ''}`}>
                     {column.render(row)}

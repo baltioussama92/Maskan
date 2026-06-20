@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { adminModalBackdrop, adminModalPanel } from './ui'
 import { toAssetUrl } from '../utils/assetUrl'
 
 interface ImageLightboxProps {
@@ -21,37 +21,29 @@ export default function ImageLightbox({ src, alt, onClose }: ImageLightboxProps)
   }, [onClose])
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4"
+    <div
+      className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 ${adminModalBackdrop}`}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={alt}
+    >
+      <button
+        type="button"
         onClick={onClose}
-        role="dialog"
-        aria-modal="true"
-        aria-label={alt}
+        className="absolute top-4 right-4 z-[101] flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-2xl leading-none text-white transition-colors duration-200 hover:bg-white/25"
+        aria-label="Close preview"
       >
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 z-[101] flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-2xl leading-none text-white transition hover:bg-white/25"
-          aria-label="Close preview"
-        >
-          ×
-        </button>
+        ×
+      </button>
 
-        <motion.img
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.96 }}
-          src={src}
-          alt={alt}
-          onClick={(event) => event.stopPropagation()}
-          className="max-h-[92vh] max-w-[92vw] rounded-xl object-contain shadow-2xl"
-        />
-      </motion.div>
-    </AnimatePresence>
+      <img
+        src={src}
+        alt={alt}
+        onClick={(event) => event.stopPropagation()}
+        className={`max-h-[92vh] max-w-[92vw] rounded-xl object-contain shadow-2xl ${adminModalPanel}`}
+      />
+    </div>
   )
 }
 
@@ -80,7 +72,7 @@ export function ClickableImagePreview({
       <button
         type="button"
         onClick={() => onOpen(src, alt)}
-        className="mt-2 block w-full overflow-hidden rounded-lg border border-[#D4C4B9] text-left transition hover:border-[#CBAD8D] focus:outline-none focus:ring-2 focus:ring-[#CBAD8D]"
+        className="mt-2 block w-full overflow-hidden rounded-lg border border-[#D4C4B9] text-left transition-colors duration-200 hover:border-[#CBAD8D] focus:outline-none focus:ring-2 focus:ring-[#CBAD8D]"
         aria-label={`View full size: ${alt}`}
       >
         <img

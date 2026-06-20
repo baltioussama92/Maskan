@@ -131,7 +131,7 @@ const normalizeUser = (user, localProfile = null) => ({
 // -- Explorer Page with Search -----------------------------------------------
 function ExplorerPage({ user = null, onAuthClick = null }) {
   const [searchParams] = useSearchParams()
-  const location = searchParams.get('location')
+  const city = searchParams.get('city') || searchParams.get('location')
   const checkIn = searchParams.get('checkIn')
   const checkOut = searchParams.get('checkOut')
   const guests = searchParams.get('guests')
@@ -139,8 +139,8 @@ function ExplorerPage({ user = null, onAuthClick = null }) {
   return (
     <div className="pt-24">
       <PropertyGrid 
-        title={location ? `Propriétés à ${location}` : 'Explorer toutes les propriétés'}
-        searchFilters={{ location, checkIn, checkOut, guests: guests ? parseInt(guests) : null }}
+        title={city ? `Propriétés à ${city}` : 'Explorer toutes les propriétés'}
+        searchFilters={{ city, checkIn, checkOut, guests: guests ? parseInt(guests, 10) : null }}
         user={user}
         onAuthClick={onAuthClick}
       />
@@ -337,6 +337,7 @@ function AppRoutes() {
           <Routes>
             <Route path="/"         element={<HomePage user={user} onAuthClick={handleAuthClick} />} />
             <Route path="/explorer" element={<ExplorerPage user={user} onAuthClick={handleAuthClick} />} />
+            <Route path="/explore" element={<ExplorerPage user={user} onAuthClick={handleAuthClick} />} />
             <Route path="/property/:id" element={<Suspense fallback={<LoadingFallback />}><PropertyDetails user={user} onAuthClick={handleAuthClick} /></Suspense>} />
             <Route path="/profile"  element={user ? <ProfilePage user={user} onUserUpdate={setUser} onLogout={handleLogout} /> : <Navigate to="/?auth=login" replace />} />
             <Route path="/account"  element={user ? <ProfilePage user={user} onUserUpdate={setUser} onLogout={handleLogout} /> : <Navigate to="/?auth=login" replace />} />

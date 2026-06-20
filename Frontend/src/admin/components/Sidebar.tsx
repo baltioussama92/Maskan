@@ -19,7 +19,6 @@ import {
   UserCog,
   Users,
 } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { cx } from './ui'
 
 const links = [
@@ -75,12 +74,9 @@ export default function Sidebar({
       ) : null}
 
       <aside className={asideClasses}>
-      <motion.div
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: 'easeOut' }}
+      <div
         className={cx(
-          'mb-4 rounded-2xl border border-[#CFAE88]/30 bg-[#FFFFFF]/10 px-4 py-4 backdrop-blur',
+          'mb-4 rounded-2xl border border-[#CFAE88]/30 bg-[#FFFFFF]/10 px-4 py-4 backdrop-blur opacity-0 motion-safe:animate-admin-fade-in-up motion-reduce:animate-none motion-reduce:opacity-100',
           collapsed && 'px-3',
         )}
       >
@@ -98,7 +94,7 @@ export default function Sidebar({
             {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
         </div>
-      </motion.div>
+      </div>
 
       <nav className="custom-admin-scroll space-y-1.5 overflow-y-auto pr-1">
         {links.map(({ to, label, icon: Icon }) => (
@@ -106,7 +102,7 @@ export default function Sidebar({
             key={to}
             to={to}
             className={({ isActive }) => (
-              `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+              `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
                 isActive
                   ? 'bg-[#CBA97F]/25 text-[#FFFFFF] ring-1 ring-[#D7B488]/55'
                   : 'text-[#F2E5D7]/90 hover:bg-[#FFFFFF]/10 hover:text-[#FFFFFF]'
@@ -124,7 +120,7 @@ export default function Sidebar({
           <NavLink
             to="/admin/host-demands"
             className={({ isActive }) =>
-              `group flex items-center gap-3 rounded-xl border border-dashed px-3 py-2.5 text-sm font-medium transition-all ${
+              `group flex items-center gap-3 rounded-xl border border-dashed px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
                 isActive
                   ? 'border-[#D7B488]/60 bg-[#CBA97F]/25 text-white'
                   : 'border-[#D7B488]/30 text-[#EEDDC9] hover:bg-[#FFFFFF]/10'
@@ -142,7 +138,7 @@ export default function Sidebar({
         <button
           type="button"
           onClick={onNavigateHome}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-[#F9F4ED] transition hover:bg-[#FFFFFF]/12"
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-[#F9F4ED] transition-colors duration-200 hover:bg-[#FFFFFF]/12"
           title={collapsed ? 'Home page' : undefined}
         >
           <Home size={15} />
@@ -151,7 +147,7 @@ export default function Sidebar({
         <button
           type="button"
           onClick={onNavigateExplore}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-[#F9F4ED] transition hover:bg-[#FFFFFF]/12"
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-[#F9F4ED] transition-colors duration-200 hover:bg-[#FFFFFF]/12"
           title={collapsed ? 'Explore listings' : undefined}
         >
           <Compass size={15} />
@@ -163,7 +159,7 @@ export default function Sidebar({
         <button
           type="button"
           onClick={onLogout}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#CBAD8D] px-3 py-2.5 text-sm font-semibold text-[#2F241F] transition hover:bg-[#D8B999]"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#CBAD8D] px-3 py-2.5 text-sm font-semibold text-[#2F241F] transition-colors duration-200 hover:bg-[#D8B999]"
           title={collapsed ? 'Logout' : undefined}
         >
           <LogOut size={16} />

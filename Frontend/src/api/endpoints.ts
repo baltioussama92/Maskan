@@ -8,6 +8,7 @@ export const ENDPOINTS = {
     list: '/listings',
     mine: '/listings/owner/me',
     search: '/listings/search',
+    heroSearch: '/properties/search',
     byId: (id: number | string) => `/listings/${id}`,
     bookedDates: (propertyId: number | string) => `/properties/${propertyId}/booked-dates`,
   },
