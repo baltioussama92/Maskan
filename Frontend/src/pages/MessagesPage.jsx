@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { MessageSquare, Send, Search, Loader2, UserPlus, CheckCircle2, MoreVertical } from 'lucide-react'
+import { MessageSquare, Send, Search, Loader2, UserPlus, CheckCircle2, MoreVertical, ArrowLeft } from 'lucide-react'
+import { API_BASE_URL, WS_URL } from '../config/env'
 import { AnimatePresence, motion } from 'framer-motion'
 import { messageService } from '../services/messageService'
 import { userService } from '../services/userService'
@@ -8,7 +9,6 @@ import { connectionService } from '../services/connectionService'
 import { bookingService } from '../services/bookingService'
 import { useNotifications } from '../context/NotificationContext'
 import { getStoredAuthToken } from '../api/apiClient'
-import { WS_URL } from '../config/env'
 
 const formatTime = (value) => {
   if (!value) return ''
@@ -17,21 +17,39 @@ const formatTime = (value) => {
 
 const sameId = (left, right) => String(left) === String(right)
 
-const getInitials = (name = '') => {
-  const parts = String(name).trim().split(/\s+/).filter(Boolean)
-  if (!parts.length) return '?'
-  return parts.slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('')
-}
-
 const sortMessages = (items) => [...items].sort(
   (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),
 )
+
+/** Log axios/fetch errors with enough detail to debug CORS, 403, 404, etc. */
+const logApiError = (label, error) => {
+  const status = error?.response?.status
+  const statusText = error?.response?.statusText
+  const url = error?.config?.url ?? error?.response?.config?.url
+  const message = error?.response?.data?.message ?? error?.message
+  const isNetwork = !error?.response && Boolean(error?.request)
+  console.error(`[Maskan Messages] ${label}`, {
+    status,
+    statusText,
+    url: url ? (url.startsWith('http') ? url : `${API_BASE_URL}${url}`) : undefined,
+    message,
+    responseData: error?.response?.data,
+    isNetworkError: isNetwork,
+    isCorsSuspect: isNetwork && !error?.response,
+    is403Forbidden: status === 403,
+    is404NotFound: status === 404,
+    is401Unauthorized: status === 401,
+  })
+}
 
 export default function MessagesPage({ user }) {
   const location = useLocation()
   const { notify } = useNotifications()
   const messagesEndRef = useRef(null)
-  const [loading, setLoading] = useState(true)
+  const chatScrollRef = useRef(null)
+  const [conversationsLoading, setConversationsLoading] = useState(true)
+  const [conversationsError, setConversationsError] = useState(null)
+  const [mobilePane, setMobilePane] = useState('list')
   const [search, setSearch] = useState('')
   const [userSearch, setUserSearch] = useState('')
   const [userResults, setUserResults] = useState([])
@@ -81,6 +99,7 @@ export default function MessagesPage({ user }) {
   useEffect(() => {
     if (location.state?.recipientId) {
       setActiveContactId(String(location.state.recipientId))
+      setMobilePane('chat')
       if (location.state?.recipientName) {
         setBookingContacts((prev) => {
           const id = String(location.state.recipientId)
@@ -116,10 +135,24 @@ export default function MessagesPage({ user }) {
   }
 
   const loadConversations = useCallback(async () => {
-    const data = await messageService.conversations()
-    setConversations(data)
-    if (!activeContactId && data.length) {
-      setActiveContactId(String(data[0].userId))
+    setConversationsLoading(true)
+    setConversationsError(null)
+    try {
+      const data = await messageService.conversations()
+      setConversations(data)
+      if (!activeContactId && data.length && window.matchMedia('(min-width: 768px)').matches) {
+        setActiveContactId(String(data[0].userId))
+      }
+      return data
+    } catch (error) {
+      logApiError('GET /messages/conversations', error)
+      setConversationsError(
+        error?.response?.data?.message || error?.message || 'Impossible de charger les conversations.',
+      )
+      setConversations([])
+      throw error
+    } finally {
+      setConversationsLoading(false)
     }
   }, [activeContactId])
 
@@ -141,7 +174,7 @@ export default function MessagesPage({ user }) {
     }
 
     const ownerBookings = await bookingService.getOwnerBookings()
-    const guests = new Map()
+    const guests = new Map();
 
     (ownerBookings.content || []).forEach((booking) => {
       const guestId = booking?.guestId
@@ -178,32 +211,43 @@ export default function MessagesPage({ user }) {
   }
 
   useEffect(() => {
-    if (!user) return
+    if (!user) return undefined
     let active = true
 
-    const load = async () => {
-      setLoading(true)
+    const fetchConversations = async () => {
       try {
-        await Promise.all([
-          loadConnections(),
-          loadConversations(),
-          loadBookingContacts(),
-        ])
-        if (!active) return
+        await loadConversations()
       } catch {
-        if (!active) return
-        notify('Chargement des conversations impossible.', 'error')
-      } finally {
-        if (active) setLoading(false)
+        if (active) {
+          notify('Chargement des conversations impossible.', 'error')
+        }
       }
     }
 
-    load()
+    const fetchConnections = async () => {
+      try {
+        await loadConnections()
+      } catch (error) {
+        logApiError('GET /connections', error)
+      }
+    }
+
+    const fetchBookingContacts = async () => {
+      try {
+        await loadBookingContacts()
+      } catch (error) {
+        logApiError('GET owner bookings (contacts)', error)
+      }
+    }
+
+    fetchConversations()
+    fetchConnections()
+    fetchBookingContacts()
 
     return () => {
       active = false
     }
-  }, [user])
+  }, [user, loadConversations, notify])
 
   useEffect(() => {
     if (!user?.id) return undefined
@@ -298,8 +342,19 @@ export default function MessagesPage({ user }) {
   }, [activeContactId, user])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const scrollTarget = messagesEndRef.current
+    if (!scrollTarget) return
+    scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages, activeContactId])
+
+  const handleSelectContact = (contactId) => {
+    setActiveContactId(contactId)
+    setMobilePane('chat')
+  }
+
+  const handleBackToList = () => {
+    setMobilePane('list')
+  }
 
   useEffect(() => {
     if (!user || !userSearch.trim()) {
@@ -461,11 +516,16 @@ export default function MessagesPage({ user }) {
   )
 
   return (
-    <section className="min-h-screen pt-24 pb-12 px-3 sm:px-6 bg-gradient-to-b from-primary-50/70 to-primary-100/50">
+    <section className="min-h-screen w-full max-w-full overflow-x-hidden pt-20 sm:pt-24 pb-6 sm:pb-12 px-3 sm:px-6 bg-gradient-to-b from-primary-50/70 to-primary-100/50">
       <div className="max-w-7xl mx-auto">
         <div className="rounded-3xl border border-primary-200/80 bg-white/85 backdrop-blur-sm shadow-[0_20px_50px_rgba(74,56,46,0.10)] overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] min-h-[74vh]">
-            <aside className="border-r border-primary-200/80 bg-primary-50/70">
+          <div className="flex flex-col md:grid md:grid-cols-[minmax(280px,340px)_1fr] min-h-[calc(100dvh-7rem)] max-h-[calc(100dvh-5rem)] md:min-h-[74vh] md:max-h-none">
+            {/* ── Sidebar: conversation list ── */}
+            <aside
+              className={`flex flex-col border-r border-primary-200/80 bg-primary-50/70 min-h-0 ${
+                mobilePane === 'chat' ? 'hidden md:flex' : 'flex'
+              }`}
+            >
               <div className="p-4 border-b border-primary-200/80">
                 <div className="flex items-center justify-between mb-3">
                   <h1 className="text-2xl font-extrabold text-primary-900">Messages</h1>
@@ -499,7 +559,7 @@ export default function MessagesPage({ user }) {
                 </div>
               </div>
 
-              <div className="p-3 space-y-2 max-h-[58vh] overflow-y-auto">
+              <div className="flex-1 min-h-0 p-3 space-y-2 overflow-y-auto">
                 {userResults.length > 0 && (
                   <div className="space-y-2 pb-2 border-b border-primary-200/80">
                     {userResults.slice(0, 5).map((entry) => (
@@ -537,9 +597,22 @@ export default function MessagesPage({ user }) {
                   </div>
                 )}
 
-                {loading ? (
-                  <div className="flex justify-center py-10">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary-400" />
+                {conversationsLoading ? (
+                  <div className="flex flex-col items-center justify-center gap-2 py-10">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
+                    <p className="text-xs text-primary-500">Chargement des conversations…</p>
+                  </div>
+                ) : conversationsError ? (
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-center">
+                    <p className="text-sm font-semibold text-red-800">Erreur de chargement</p>
+                    <p className="mt-1 text-xs text-red-600">{conversationsError}</p>
+                    <button
+                      type="button"
+                      onClick={() => loadConversations().catch(() => {})}
+                      className="mt-3 rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-600"
+                    >
+                      Réessayer
+                    </button>
                   </div>
                 ) : filteredContacts.length === 0 ? (
                   <p className="text-sm text-primary-500 py-8 text-center">Aucune conversation</p>
@@ -556,7 +629,8 @@ export default function MessagesPage({ user }) {
                       return (
                     <button
                       key={contact.id}
-                      onClick={() => setActiveContactId(contact.id)}
+                      type="button"
+                      onClick={() => handleSelectContact(contact.id)}
                       className={`w-full text-left p-3 rounded-2xl border transition ${
                         String(activeContactId) === String(contact.id)
                           ? 'bg-white border-primary-300 shadow-sm'
@@ -586,14 +660,27 @@ export default function MessagesPage({ user }) {
               </div>
             </aside>
 
-            <section className="flex flex-col bg-white">
-              <header className="px-5 py-4 border-b border-primary-200/80 flex items-center justify-between">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-11 h-11 rounded-full bg-primary-200 text-primary-900 font-bold text-base flex items-center justify-center shrink-0">
+            {/* ── Chat pane ── */}
+            <section
+              className={`flex flex-col bg-white min-h-0 ${
+                mobilePane === 'list' ? 'hidden md:flex' : 'flex'
+              }`}
+            >
+              <header className="shrink-0 px-4 sm:px-5 py-3 sm:py-4 border-b border-primary-200/80 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <button
+                    type="button"
+                    onClick={handleBackToList}
+                    className="md:hidden p-2 -ml-1 rounded-xl text-primary-600 hover:bg-primary-50 transition shrink-0"
+                    aria-label="Retour aux conversations"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-primary-200 text-primary-900 font-bold text-sm sm:text-base flex items-center justify-center shrink-0">
                     {activeContact?.name?.charAt(0)?.toUpperCase() || '?'}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xl font-bold text-primary-900 truncate">
+                    <p className="text-lg sm:text-xl font-bold text-primary-900 truncate">
                       {activeContact ? activeContact.name : 'Sélectionnez une conversation'}
                     </p>
                     <p className="text-xs text-primary-500 truncate">
@@ -614,7 +701,10 @@ export default function MessagesPage({ user }) {
                 </button>
               </header>
 
-              <div className="flex-1 px-4 md:px-6 py-4 overflow-y-auto bg-gradient-to-b from-white to-primary-50/25">
+              <div
+                ref={chatScrollRef}
+                className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 py-4 bg-[#f0f2f5] md:bg-gradient-to-b md:from-white md:to-primary-50/25"
+              >
                 {!activeContactId ? (
                   <div className="h-full flex items-center justify-center text-center">
                     <div>
@@ -632,79 +722,68 @@ export default function MessagesPage({ user }) {
                   </div>
                 ) : (
                   <AnimatePresence initial={false}>
-                    <div className="space-y-4">
+                    <div className="space-y-3 pb-2">
                       {messages.map((message) => {
                         const currentUser = String(user?.id)
                         const mine = sameId(message.senderId, currentUser)
-                        const displayName = mine
-                          ? 'Vous'
-                          : (activeContact?.name || 'Invité')
 
                         return (
                           <motion.div
                             key={message.id}
                             layout
-                            initial={{ opacity: 0, y: 10 }}
+                            initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.22, ease: 'easeOut' }}
-                            className={`group flex items-end gap-3 ${mine ? 'justify-end' : 'justify-start'}`}
+                            transition={{ duration: 0.18, ease: 'easeOut' }}
+                            className={`flex ${mine ? 'justify-end' : 'justify-start'}`}
                           >
-                            {!mine && (
-                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#6F4E37] text-[11px] font-bold text-white shadow-sm">
-                                {getInitials(displayName)}
-                              </div>
-                            )}
-
-                            <div className={`flex max-w-[86%] flex-col ${mine ? 'items-end' : 'items-start'}`}>
-                              <motion.div
-                                whileHover={{ y: -1 }}
-                                className={`group inline-flex flex-col rounded-2xl px-4 py-3 shadow-sm transition-shadow duration-200 ${
+                            <div className={`flex max-w-[85%] sm:max-w-[72%] flex-col ${mine ? 'items-end' : 'items-start'}`}>
+                              <div
+                                className={`rounded-2xl px-4 py-2.5 shadow-sm ${
                                   mine
-                                    ? 'rounded-tr-none bg-[#6F4E37] text-white shadow-[#6F4E37]/15'
-                                    : 'rounded-tl-none border border-gray-200 bg-gray-100 text-slate-800 shadow-gray-200/70'
+                                    ? 'rounded-br-md bg-primary-500 text-white'
+                                    : 'rounded-bl-md bg-white text-gray-800 border border-gray-100'
                                 }`}
                               >
                                 <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
-                              </motion.div>
-
-                              <div className={`mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 opacity-70 transition-opacity duration-200 group-hover:opacity-100 ${mine ? 'justify-end' : 'justify-start'}`}>
-                                <span className="font-medium uppercase tracking-[0.18em] opacity-70">
-                                  {displayName}
-                                </span>
-                                <span aria-hidden="true">•</span>
-                                <span className="opacity-70">{formatTime(message.createdAt)}</span>
                               </div>
+                              <span className={`mt-1 px-1 text-[10px] text-gray-500 ${mine ? 'text-right' : 'text-left'}`}>
+                                {formatTime(message.createdAt)}
+                              </span>
                             </div>
                           </motion.div>
                         )
                       })}
-                      <div ref={messagesEndRef} />
+                      <div ref={messagesEndRef} aria-hidden="true" />
                     </div>
                   </AnimatePresence>
                 )}
               </div>
 
-              <form onSubmit={handleSend} className="p-3 md:p-4 border-t border-primary-200/80 bg-white">
-                <div className="flex items-center gap-2">
+              <form
+                onSubmit={handleSend}
+                className="sticky bottom-0 shrink-0 border-t border-primary-200/80 bg-white p-3 md:p-4"
+              >
+                <div className="flex items-end gap-2">
                   <input
                     value={draft}
                     onChange={(event) => setDraft(event.target.value)}
-                    placeholder={activeContactId ? 'Écrire un message...' : 'Sélectionnez une conversation'}
+                    placeholder={activeContactId ? 'Écrire un message…' : 'Sélectionnez une conversation'}
                     disabled={!activeContactId || !canMessageActiveContact}
-                    className="flex-1 px-4 py-3 rounded-xl border border-primary-200 bg-primary-50 text-sm text-primary-900 outline-none focus:ring-2 focus:ring-primary-200 disabled:opacity-60"
+                    className="flex-1 min-w-0 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-500/30 disabled:opacity-60"
                   />
                   <button
                     type="submit"
                     disabled={!activeContactId || !draft.trim() || !canMessageActiveContact}
-                    className="px-4 md:px-5 py-3 rounded-xl bg-primary-500 text-white text-sm font-semibold disabled:opacity-60 inline-flex items-center gap-1.5 hover:bg-primary-600 transition"
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-500 text-white shadow-md transition hover:bg-primary-600 disabled:opacity-50 disabled:shadow-none sm:h-auto sm:w-auto sm:rounded-2xl sm:px-5 sm:py-3"
+                    aria-label="Envoyer"
                   >
-                    <Send className="w-4 h-4" /> Envoyer
+                    <Send className="w-4 h-4 sm:mr-1.5" />
+                    <span className="hidden sm:inline text-sm font-semibold">Envoyer</span>
                   </button>
                 </div>
-                <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
-                  <span>{socketReady ? 'Synchronisation en temps réel active' : 'Connexion temps réel en attente'}</span>
-                  <span>{activeContactId ? 'Conversation privée sécurisée' : 'Aucun destinataire sélectionné'}</span>
-                </div>
+                <p className="mt-2 hidden sm:block text-[11px] text-gray-400">
+                  {socketReady ? 'Temps réel actif' : 'Mode hors ligne — envoi via API'}
+                </p>
               </form>
             </section>
           </div>
