@@ -608,3 +608,45 @@ input, select, textarea { font-family: inherit; }
 .maskan-datepicker .react-datepicker__day--outside-month {
   color: #c5b9ab;
 }
+
+/* ── Performance: reduce motion on mobile + prefers-reduced-motion ── */
+@media (max-width: 767px) {
+  .motion-mobile-off,
+  .motion-mobile-off * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* CLS: reserve modal + button space */
+.modal-shell {
+  width: min(100%, 56rem);
+  min-height: min(90svh, 640px);
+  max-height: 90svh;
+  contain: layout style;
+}
+
+.btn-stable {
+  min-height: 2.5rem;
+  min-width: 2.5rem;
+  contain: layout;
+}
+
+.contain-layout {
+  contain: layout;
+}

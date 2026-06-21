@@ -270,13 +270,14 @@ export default function AuthModal({ initialMode = 'login', onClose, onSuccess })
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
       >
         <motion.div
-          className="relative grid w-full max-w-4xl overflow-hidden rounded-3xl border border-primary-100/15 bg-primary-50 shadow-2xl lg:grid-cols-2"
-          initial={{ y: 26, opacity: 0, scale: 0.98 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
-          exit={{ y: 20, opacity: 0, scale: 0.98 }}
-          transition={{ duration: 0.28, ease: 'easeOut' }}
+          className="modal-shell relative grid w-full overflow-hidden rounded-3xl border border-primary-100/15 bg-primary-50 shadow-2xl lg:grid-cols-2"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 8 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
         >
           <section className="relative hidden min-h-[560px] overflow-hidden lg:block">
             <img src={HOUSE_IMAGE_URL} alt="Modern family home exterior" className="absolute inset-0 h-full w-full object-cover" />

@@ -1,23 +1,25 @@
-import React, { useEffect, useState, Suspense } from 'react'
+import React, { useEffect, useState, Suspense, startTransition } from 'react'
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 import Layout         from './layout/Layout'
 import Watermark      from './components/Watermark'
 import HomePage       from './pages/HomePage'
-import DashboardPage  from './pages/DashboardPage'
 import AuthModal      from './components/auth/AuthModal'
 import PropertyGrid   from './components/properties/PropertyGrid'
-const PropertyDetails = React.lazy(() => import('./pages/PropertyDetails'))
-import ProfilePage    from './pages/ProfilePage'
-import WishlistPage       from './pages/WishlistPage'
-import BookingsPage       from './pages/BookingsPage'
-import MessagesPage       from './pages/MessagesPage'
-import SettingsPage       from './pages/SettingsPage'
-import BookingConfirmPage from './pages/BookingConfirm'
-import NotificationsPage from './pages/NotificationsPage'
 import AdminLayout from './admin/components/AdminLayout'
+import InstallAppButton from './components/pwa/InstallAppButton'
 import { useNotifications } from './context/NotificationContext'
+
+const PropertyDetails = React.lazy(() => import('./pages/PropertyDetails'))
+const DashboardPage  = React.lazy(() => import('./pages/DashboardPage'))
+const ProfilePage    = React.lazy(() => import('./pages/ProfilePage'))
+const WishlistPage       = React.lazy(() => import('./pages/WishlistPage'))
+const BookingsPage       = React.lazy(() => import('./pages/BookingsPage'))
+const MessagesPage       = React.lazy(() => import('./pages/MessagesPage'))
+const SettingsPage       = React.lazy(() => import('./pages/SettingsPage'))
+const BookingConfirmPage = React.lazy(() => import('./pages/BookingConfirm'))
+const NotificationsPage = React.lazy(() => import('./pages/NotificationsPage'))
 
 // Lazy load less frequently used pages
 const HostVerificationPage = React.lazy(() => import('./pages/HostVerificationPage'))
@@ -218,7 +220,9 @@ function AppRoutes() {
   }, [location.search])
 
   const handleAuthClick = (mode) => {
-    setAuthModal(mode)
+    startTransition(() => {
+      setAuthModal(mode)
+    })
   }
 
   useEffect(() => {
@@ -313,7 +317,7 @@ function AppRoutes() {
     <>
       {isDash ? (
         <Routes>
-          <Route path="/dashboard/*" element={<DashboardPage />} />
+          <Route path="/dashboard/*" element={<Suspense fallback={<LoadingFallback />}><DashboardPage /></Suspense>} />
         </Routes>
       ) : isAdminArea ? (
         <Routes>
@@ -339,23 +343,23 @@ function AppRoutes() {
             <Route path="/explorer" element={<ExplorerPage user={user} onAuthClick={handleAuthClick} />} />
             <Route path="/explore" element={<ExplorerPage user={user} onAuthClick={handleAuthClick} />} />
             <Route path="/property/:id" element={<Suspense fallback={<LoadingFallback />}><PropertyDetails user={user} onAuthClick={handleAuthClick} /></Suspense>} />
-            <Route path="/profile"  element={user ? <ProfilePage user={user} onUserUpdate={setUser} onLogout={handleLogout} /> : <Navigate to="/?auth=login" replace />} />
-            <Route path="/account"  element={user ? <ProfilePage user={user} onUserUpdate={setUser} onLogout={handleLogout} /> : <Navigate to="/?auth=login" replace />} />
+            <Route path="/profile"  element={user ? <Suspense fallback={<LoadingFallback />}><ProfilePage user={user} onUserUpdate={setUser} onLogout={handleLogout} /></Suspense> : <Navigate to="/?auth=login" replace />} />
+            <Route path="/account"  element={user ? <Suspense fallback={<LoadingFallback />}><ProfilePage user={user} onUserUpdate={setUser} onLogout={handleLogout} /></Suspense> : <Navigate to="/?auth=login" replace />} />
             <Route path="/host-verification" element={user ? <Suspense fallback={<LoadingFallback />}><HostVerificationPage user={user} onUserUpdate={setUser} /></Suspense> : <Navigate to="/?auth=login" replace />} />
             <Route path="/become-a-host" element={user ? <Suspense fallback={<LoadingFallback />}><BecomeAHostPage user={user} /></Suspense> : <Navigate to="/?auth=login" replace />} />
             <Route path="/guest-verification" element={user ? <Suspense fallback={<LoadingFallback />}><GuestVerificationPage user={user} onUserUpdate={setUser} /></Suspense> : <Navigate to="/?auth=login" replace />} />
-            <Route path="/bookings"  element={user ? <BookingsPage user={user} /> : <Navigate to="/?auth=login" replace />} />
-            <Route path="/messages"  element={user ? <MessagesPage user={user} /> : <Navigate to="/?auth=login" replace />} />
-            <Route path="/settings"  element={user ? <SettingsPage user={user} onUserUpdate={setUser} onLogout={handleLogout} /> : <Navigate to="/?auth=login" replace />} />
-            <Route path="/favorites" element={user ? <WishlistPage user={user} /> : <Navigate to="/?auth=login" replace />} />
+            <Route path="/bookings"  element={user ? <Suspense fallback={<LoadingFallback />}><BookingsPage user={user} /></Suspense> : <Navigate to="/?auth=login" replace />} />
+            <Route path="/messages"  element={user ? <Suspense fallback={<LoadingFallback />}><MessagesPage user={user} /></Suspense> : <Navigate to="/?auth=login" replace />} />
+            <Route path="/settings"  element={user ? <Suspense fallback={<LoadingFallback />}><SettingsPage user={user} onUserUpdate={setUser} onLogout={handleLogout} /></Suspense> : <Navigate to="/?auth=login" replace />} />
+            <Route path="/favorites" element={user ? <Suspense fallback={<LoadingFallback />}><WishlistPage user={user} /></Suspense> : <Navigate to="/?auth=login" replace />} />
             <Route path="/add-property"    element={user ? <Suspense fallback={<LoadingFallback />}><AddPropertyPage user={user} /></Suspense> : <Navigate to="/?auth=login" replace />} />
             <Route path="/my-properties"   element={user ? <Suspense fallback={<LoadingFallback />}><MyPropertiesPage user={user} /></Suspense> : <Navigate to="/?auth=login" replace />} />
             <Route path="/host-bookings"   element={user ? <Suspense fallback={<LoadingFallback />}><HostBookingsPage user={user} /></Suspense> : <Navigate to="/?auth=login" replace />} />
             <Route path="/admin-control"   element={user && (user.role === 'ADMIN') ? <Suspense fallback={<LoadingFallback />}><AdminControlPage user={user} /></Suspense> : <Navigate to="/" replace />} />
             <Route path="/forgot-password" element={<Suspense fallback={<LoadingFallback />}><ForgotPasswordPage /></Suspense>} />
             <Route path="/reset-password" element={<Suspense fallback={<LoadingFallback />}><ResetPasswordPage /></Suspense>} />
-            <Route path="/booking/:id/confirm" element={user ? <BookingConfirmPage user={user} /> : <Navigate to="/?auth=login" replace />} />
-            <Route path="/notifications" element={user ? <NotificationsPage user={user} /> : <Navigate to="/?auth=login" replace />} />
+            <Route path="/booking/:id/confirm" element={user ? <Suspense fallback={<LoadingFallback />}><BookingConfirmPage user={user} /></Suspense> : <Navigate to="/?auth=login" replace />} />
+            <Route path="/notifications" element={user ? <Suspense fallback={<LoadingFallback />}><NotificationsPage user={user} /></Suspense> : <Navigate to="/?auth=login" replace />} />
             <Route path="/report" element={<Suspense fallback={<LoadingFallback />}><ReportPage /></Suspense>} />
             <Route path="*"         element={<NotFound     />} />
           </Routes>
@@ -417,6 +421,7 @@ export default function App() {
           <div className="relative z-10">
             <Watermark />
             <AppRoutes />
+            <InstallAppButton />
           </div>
         </BrowserRouter>
 

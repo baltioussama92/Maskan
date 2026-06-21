@@ -80,7 +80,13 @@ export default {
         'admin-fade-in': 'admin-fade-in 200ms ease-out forwards',
         'admin-modal-in': 'admin-modal-in 200ms ease-out forwards',
       },
+      transitionDuration: {
+        0: '0ms',
+      },
     },
   },
   plugins: [],
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
 }
