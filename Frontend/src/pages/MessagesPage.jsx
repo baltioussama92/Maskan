@@ -224,9 +224,12 @@ export default function MessagesPage({ user }) {
         webSocketFactory: () => new SockJS(WS_URL),
         reconnectDelay: 4000,
         connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
-        debug: () => {},
+        debug: (msg) => {
+          if (import.meta.env.DEV) console.debug('[Maskan WS]', msg)
+        },
         onConnect: () => {
           if (disposed) return
+          console.info('[Maskan] WebSocket Connected ✅', { url: WS_URL })
           setSocketReady(true)
           client.subscribe('/user/queue/chat', (frame) => {
             try {
@@ -247,8 +250,22 @@ export default function MessagesPage({ user }) {
             }
           })
         },
-        onWebSocketClose: () => !disposed && setSocketReady(false),
-        onStompError: () => !disposed && setSocketReady(false),
+        onWebSocketClose: () => {
+          if (!disposed) {
+            console.warn('[Maskan] WebSocket Closed ⚠️', { url: WS_URL })
+            setSocketReady(false)
+          }
+        },
+        onStompError: (frame) => {
+          if (!disposed) {
+            console.error('[Maskan] WebSocket STOMP Error ❌', {
+              url: WS_URL,
+              message: frame?.headers?.message,
+              body: frame?.body,
+            })
+            setSocketReady(false)
+          }
+        },
       })
 
       if (disposed) {

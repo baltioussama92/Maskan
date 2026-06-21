@@ -10,6 +10,7 @@ import PropertyGrid   from './components/properties/PropertyGrid'
 import AdminLayout from './admin/components/AdminLayout'
 import InstallAppButton from './components/pwa/InstallAppButton'
 import { useNotifications } from './context/NotificationContext'
+import { useBackendConnectivityCheck } from './hooks/useBackendConnectivityCheck'
 
 const PropertyDetails = React.lazy(() => import('./pages/PropertyDetails'))
 const DashboardPage  = React.lazy(() => import('./pages/DashboardPage'))
@@ -383,6 +384,8 @@ function AppRoutes() {
 
 // -- Root App --------------------------------------------------
 export default function App() {
+  useBackendConnectivityCheck()
+
   const [isOpening, setIsOpening] = useState(() => {
     try {
       return sessionStorage.getItem('maskan_loader_seen') !== '1'
