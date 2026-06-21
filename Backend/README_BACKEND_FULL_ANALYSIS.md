@@ -343,7 +343,7 @@ Le bridge est clair et standardisé:
 
 1. **Base URL côté frontend**
    - `Frontend/src/api/apiClient.ts`
-   - `baseURL = ${VITE_API_BASE_URL}/api` (par défaut `http://localhost:8080/api`)
+   - `baseURL = ${VITE_API_BASE_URL}/api` (par défaut `https://maskan-xzpw.onrender.com/api`)
 
 2. **Token JWT**
    - stocké dans `localStorage` (`authToken`)

@@ -5,7 +5,7 @@ import { X } from 'lucide-react'
 
 import AuthLoader from './LoginLoader'
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080').replace(/\/$/, '')
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://maskan-xzpw.onrender.com').replace(/\/$/, '')
 const AUTH_TOKEN_KEY = 'authToken'
 const USER_STORAGE_KEY = 'user'
 const ROLE_STORAGE_KEY = 'userRole'

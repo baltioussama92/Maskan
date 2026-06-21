@@ -452,7 +452,7 @@ npm run build
 
 ### Test Password Changed Email
 ```bash
-curl -X PATCH http://localhost:8080/api/users/update-password \
+curl -X PATCH https://maskan-xzpw.onrender.com/api/users/update-password \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"currentPassword":"oldPass","newPassword":"newPass123"}'
@@ -460,7 +460,7 @@ curl -X PATCH http://localhost:8080/api/users/update-password \
 
 ### Test New Message Email
 ```bash
-curl -X POST http://localhost:8080/api/messages/send \
+curl -X POST https://maskan-xzpw.onrender.com/api/messages/send \
   -H "Authorization: Bearer SENDER_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"receiverEmail":"user@maskan.com","content":"Hello!"}'
@@ -468,7 +468,7 @@ curl -X POST http://localhost:8080/api/messages/send \
 
 ### Test New Property Email
 ```bash
-curl -X POST http://localhost:8080/api/properties \
+curl -X POST https://maskan-xzpw.onrender.com/api/properties \
   -H "Authorization: Bearer OWNER_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"title":"Apt","location":"NYC","price":2500}'

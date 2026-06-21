@@ -4,14 +4,7 @@ import Table, { type TableColumn } from '../components/Table'
 import { useAdminToast } from '../components/AdminLayout'
 import { adminApi, getHostDemands, getHostDemandRowKey, type AdminUser, type HostDemand } from '../services/adminApi'
 import { SectionTabs, StatusBadge, SurfaceCard, adminEnter } from '../components/ui'
-
-function toAssetUrl(path: string): string {
-  if (!path) return ''
-  if (path.startsWith('http://') || path.startsWith('https://')) return path
-  const normalized = path.replace(/\\/g, '/')
-  if (normalized.startsWith('/')) return `http://localhost:8080${normalized}`
-  return `http://localhost:8080/${normalized}`
-}
+import { toAssetUrl } from '../../config/env'
 
 function fileNameFromPath(path: string): string {
   if (!path) return 'file'

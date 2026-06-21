@@ -43,7 +43,7 @@ const AdminReportsPage = React.lazy(() => import('./admin/pages/Reports'))
 const AdminSettingsPage = React.lazy(() => import('./admin/pages/Settings'))
 const AdminHostDemandsPage = React.lazy(() => import('./admin/pages/HostDemands'))
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080').replace(/\/$/, '')
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://maskan-xzpw.onrender.com').replace(/\/$/, '')
 const AUTH_TOKEN_KEY = 'authToken'
 const USER_STORAGE_KEY = 'user'
 const ROLE_STORAGE_KEY = 'userRole'

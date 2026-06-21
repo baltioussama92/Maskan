@@ -20,7 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/support/tickets")
-@CrossOrigin(origins = "${app.cors.allowed-origin:http://localhost:5173}")
+@CrossOrigin(origins = "${app.cors.allowed-origin:https://maskan-app.vercel.app}")
 @RequiredArgsConstructor
 public class SupportTicketController {
 

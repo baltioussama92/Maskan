@@ -16,7 +16,7 @@ const USER_STORAGE_KEY = 'user'
 const AUTH_TOKEN_KEY = 'authToken'
 const ROLE_STORAGE_KEY = 'userRole'
 const DISPLAY_ROLE_KEY = 'displayRole'
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080').replace(/\/$/, '')
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://maskan-xzpw.onrender.com').replace(/\/$/, '')
 const MAX_AVATAR_SIZE = 320
 
 function fileToDataUrl(file) {

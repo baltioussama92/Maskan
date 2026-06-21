@@ -1,7 +1,7 @@
 # Maskan - API Documentation (Spring Boot + MongoDB)
 
 ## API Base
-- Base URL (local): `http://localhost:8080/api`
+- Base URL (local): `https://maskan-xzpw.onrender.com/api`
 - Auth: JWT Bearer token via `Authorization: Bearer <token>` for protected endpoints
 - Roles used in RBAC: `TENANT` (`GUEST` alias), `PROPRIETOR` (`HOST` alias), `ADMIN`
 

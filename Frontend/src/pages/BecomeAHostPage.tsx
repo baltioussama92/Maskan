@@ -51,7 +51,7 @@ export default function BecomeAHostPage({ user }) {
       });
 
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/host-demands/submit`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://maskan-xzpw.onrender.com'}/api/host-demands/submit`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

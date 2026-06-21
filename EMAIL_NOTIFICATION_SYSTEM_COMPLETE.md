@@ -321,7 +321,7 @@ Email Sent in Background ✓ (Via Thread Pool)
 
 ### 1. Test Password Changed Alert
 ```bash
-curl -X PATCH http://localhost:8080/api/users/update-password \
+curl -X PATCH https://maskan-xzpw.onrender.com/api/users/update-password \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -337,7 +337,7 @@ INFO ... Password changed alert sent to user@example.com
 
 ### 2. Test New Message Alert
 ```bash
-curl -X POST http://localhost:8080/api/messages/send \
+curl -X POST https://maskan-xzpw.onrender.com/api/messages/send \
   -H "Authorization: Bearer SENDER_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -353,7 +353,7 @@ INFO ... New message alert sent to recipient@example.com
 
 ### 3. Test New Property Alert
 ```bash
-curl -X POST http://localhost:8080/api/properties \
+curl -X POST https://maskan-xzpw.onrender.com/api/properties \
   -H "Authorization: Bearer OWNER_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -376,7 +376,7 @@ INFO ... New property alert sent to user2@example.com
 
 ### Check Async Thread Pool Status
 ```bash
-curl http://localhost:8080/actuator/metrics/executor.active
+curl https://maskan-xzpw.onrender.com/actuator/metrics/executor.active
 ```
 
 ### View Email Logs

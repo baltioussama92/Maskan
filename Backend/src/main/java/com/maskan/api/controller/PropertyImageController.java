@@ -1,10 +1,12 @@
 package com.maskan.api.controller;
 
+import com.maskan.api.service.CloudinaryService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -29,16 +31,19 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
-import java.util.Locale;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/uploads")
-@CrossOrigin(origins = "${app.cors.allowed-origin:http://localhost:5173}")
+@CrossOrigin(origins = "${app.cors.allowed-origin:https://maskan-app.vercel.app}")
+@RequiredArgsConstructor
 public class PropertyImageController {
+
+    private final CloudinaryService cloudinaryService;
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
@@ -51,27 +56,35 @@ public class PropertyImageController {
             return ResponseEntity.badRequest().body(Map.of("message", "File is empty"));
         }
 
-        String originalName = StringUtils.cleanPath(file.getOriginalFilename() == null ? "image" : file.getOriginalFilename());
-        String extension = "";
-        int dot = originalName.lastIndexOf('.');
-        if (dot >= 0) {
-            extension = originalName.substring(dot);
+        String fileUrl;
+        String fileName;
+
+        if (cloudinaryService.isEnabled()) {
+            fileUrl = cloudinaryService.uploadImage(file);
+            fileName = fileUrl.substring(fileUrl.lastIndexOf('/') + 1);
+        } else {
+            String originalName = StringUtils.cleanPath(file.getOriginalFilename() == null ? "image" : file.getOriginalFilename());
+            String extension = "";
+            int dot = originalName.lastIndexOf('.');
+            if (dot >= 0) {
+                extension = originalName.substring(dot);
+            }
+
+            Path targetDirectory = Paths.get(uploadDir).toAbsolutePath().normalize();
+            Files.createDirectories(targetDirectory);
+
+            fileName = Instant.now().toEpochMilli() + "-" + UUID.randomUUID() + extension;
+            Path targetFile = targetDirectory.resolve(fileName);
+            Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
+
+            fileUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path("/uploads/")
+                    .path(fileName)
+                    .toUriString();
         }
 
-        Path targetDirectory = Paths.get(uploadDir).toAbsolutePath().normalize();
-        Files.createDirectories(targetDirectory);
-
-        String generatedName = Instant.now().toEpochMilli() + "-" + UUID.randomUUID() + extension;
-        Path targetFile = targetDirectory.resolve(generatedName);
-        Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
-
-        String fileUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/uploads/")
-                .path(generatedName)
-                .toUriString();
-
         Map<String, String> response = new HashMap<>();
-        response.put("fileName", generatedName);
+        response.put("fileName", fileName);
         response.put("url", fileUrl);
         response.put("uploadedBy", principal.getUsername());
 

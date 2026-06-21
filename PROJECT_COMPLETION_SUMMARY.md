@@ -192,7 +192,7 @@ cd Backend
 mvn spring-boot:run
 
 # In another terminal, test password change
-curl -X PATCH http://localhost:8080/api/users/update-password \
+curl -X PATCH https://maskan-xzpw.onrender.com/api/users/update-password \
   -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"currentPassword":"old","newPassword":"new123"}'
@@ -202,7 +202,7 @@ curl -X PATCH http://localhost:8080/api/users/update-password \
 ```
 
 ### Monitoring
-- Check thread pool: `curl http://localhost:8080/actuator/metrics/executor.active`
+- Check thread pool: `curl https://maskan-xzpw.onrender.com/actuator/metrics/executor.active`
 - View logs: `grep "alert sent to" console/logs.txt`
 - Monitor errors: `grep "SMTP delivery failed" console/logs.txt`
 

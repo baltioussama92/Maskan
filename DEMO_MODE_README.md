@@ -136,14 +136,14 @@ $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 $env:Path="$env:JAVA_HOME\bin;$env:Path"
 .\mvnw.cmd spring-boot:run
 
-# Backend should run on http://localhost:8080
+# Backend should run on https://maskan-xzpw.onrender.com
 ```
 
 ### Verify Backend is Running
 
 ```powershell
 # Test API endpoint
-curl http://localhost:8080/api/properties
+curl https://maskan-xzpw.onrender.com/api/properties
 ```
 
 ---
@@ -211,7 +211,7 @@ npm run build
 ## 🔍 Troubleshooting
 
 ### "Cannot connect to backend" (Demo mode disabled)
-- ✅ Verify backend is running: `http://localhost:8080/api/properties`
+- ✅ Verify backend is running: `https://maskan-xzpw.onrender.com/api/properties`
 - ✅ Check `VITE_API_BASE_URL` in frontend
 - ✅ Enable CORS in backend if needed
 

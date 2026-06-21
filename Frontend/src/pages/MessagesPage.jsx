@@ -7,7 +7,8 @@ import { userService } from '../services/userService'
 import { connectionService } from '../services/connectionService'
 import { bookingService } from '../services/bookingService'
 import { useNotifications } from '../context/NotificationContext'
-import { API_BASE_URL, getStoredAuthToken } from '../api/apiClient'
+import { getStoredAuthToken } from '../api/apiClient'
+import { WS_URL } from '../config/env'
 
 const formatTime = (value) => {
   if (!value) return ''
@@ -220,7 +221,7 @@ export default function MessagesPage({ user }) {
 
       const token = getStoredAuthToken()
       const client = new Client({
-        webSocketFactory: () => new SockJS(`${API_BASE_URL}/ws`),
+        webSocketFactory: () => new SockJS(WS_URL),
         reconnectDelay: 4000,
         connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
         debug: () => {},

@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@CrossOrigin(origins = "${app.cors.allowed-origin:http://localhost:5173}")
+@CrossOrigin(origins = "${app.cors.allowed-origin:https://maskan-app.vercel.app}")
 @RequiredArgsConstructor
 public class ReviewController {
 

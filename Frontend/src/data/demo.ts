@@ -8,7 +8,7 @@ import type { UserDto } from '../utils/contracts'
  * 
  * To disable demo mode:
  * 1. Change DEMO_MODE to false
- * 2. Ensure backend is running on http://localhost:8080
+ * 2. Ensure backend is running on https://maskan-xzpw.onrender.com
  * 3. Restart the frontend dev server
  * ──────────────────────────────────────────────────────────────────────────────
  */

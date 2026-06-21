@@ -25,8 +25,8 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    @Value("${app.cors.allowed-origin:http://localhost:5173}")
-    private String allowedOrigin;
+    @Value("${app.cors.allowed-origin:https://maskan-app.vercel.app}")
+    private String allowedOrigins;
 
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
@@ -40,15 +40,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        String[] origins = CorsConfig.parseOrigins(allowedOrigins).toArray(String[]::new);
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns(
-                        allowedOrigin,
-                        "http://localhost:5173",
-                        "http://localhost:5174",
-                        "http://localhost:3000",
-                        "http://localhost:3001",
-                        "http://localhost:3002"
-                )
+                .setAllowedOriginPatterns(origins)
                 .withSockJS();
     }
 

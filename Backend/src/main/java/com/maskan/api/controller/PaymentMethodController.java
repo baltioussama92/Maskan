@@ -23,7 +23,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/payment-methods")
-@CrossOrigin(origins = "${app.cors.allowed-origin:http://localhost:5173}")
+@CrossOrigin(origins = "${app.cors.allowed-origin:https://maskan-app.vercel.app}")
 @RequiredArgsConstructor
 public class PaymentMethodController {
 

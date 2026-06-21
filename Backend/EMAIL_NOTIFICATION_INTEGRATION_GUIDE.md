@@ -328,7 +328,7 @@ spring.mail.properties.mail.smtp.starttls.required=true
 
 **Test Password Change Alert:**
 ```bash
-curl -X POST http://localhost:8080/api/users/update-password \
+curl -X POST https://maskan-xzpw.onrender.com/api/users/update-password \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

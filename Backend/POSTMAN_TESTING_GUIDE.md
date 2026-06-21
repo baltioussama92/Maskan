@@ -2,7 +2,7 @@
 
 ## 1) Environment Setup
 Create a Postman environment with:
-- `baseUrl` = `http://localhost:8080`
+- `baseUrl` = `https://maskan-xzpw.onrender.com`
 - `token` = empty (will be set after login)
 - `listingId` = empty (set after create listing)
 

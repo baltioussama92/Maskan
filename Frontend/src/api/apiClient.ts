@@ -1,6 +1,8 @@
 import axios from 'axios'
+import { API_BASE_URL } from '../config/env'
 
-export const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || "http://localhost:8080";
+export { API_BASE_URL, WS_URL, toAssetUrl } from '../config/env'
+
 export const AUTH_TOKEN_KEY = 'authToken'
 const USER_STORAGE_KEY = 'user'
 const ROLE_STORAGE_KEY = 'userRole'
