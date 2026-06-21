@@ -1,26 +1,51 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 
 const NotificationContext = createContext({
-  notify: (_message, _type = 'info') => {},
+  notify: (_input, _type = 'info') => {},
+  toasts: [],
+  dismissToast: (_id) => {},
 })
+
+function normalizeNotifyInput(input, fallbackType = 'info') {
+  if (typeof input === 'string') {
+    return { message: input, type: fallbackType, link: null, unread: true }
+  }
+  return {
+    message: input?.message || '',
+    type: input?.type || fallbackType,
+    link: input?.link || input?.path || null,
+    unread: input?.unread !== false,
+  }
+}
 
 export function NotificationProvider({ children }) {
   const [toasts, setToasts] = useState([])
 
-  const notify = useCallback((message, type = 'info') => {
-    const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`
-    setToasts((prev) => [...prev, { id, message, type }])
-    window.setTimeout(() => {
-      setToasts((prev) => prev.filter((toast) => toast.id !== id))
-    }, 4000)
+  const dismissToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id))
   }, [])
+
+  const notify = useCallback((input, type = 'info') => {
+    const payload = normalizeNotifyInput(input, type)
+    if (!payload.message) return
+
+    const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+    setToasts((prev) => [...prev, { id, ...payload }])
+
+    window.setTimeout(() => {
+      dismissToast(id)
+    }, payload.link ? 6000 : 4000)
+  }, [dismissToast])
 
   useEffect(() => {
     const onNotify = (event) => {
-      const payload = event?.detail || {}
-      if (payload?.message) {
-        notify(payload.message, payload.type || 'info')
+      const detail = event?.detail || {}
+      if (detail?.message) {
+        notify({
+          message: detail.message,
+          type: detail.type || 'info',
+          link: detail.link || detail.path || null,
+        })
       }
     }
 
@@ -36,37 +61,35 @@ export function NotificationProvider({ children }) {
     }
   }, [notify])
 
-  const value = useMemo(() => ({ notify }), [notify])
+  const value = useMemo(
+    () => ({ notify, toasts, dismissToast }),
+    [notify, toasts, dismissToast],
+  )
 
   return (
     <NotificationContext.Provider value={value}>
       {children}
-      <div className="fixed top-4 right-4 z-[100] space-y-2">
-        <AnimatePresence mode="popLayout">
-          {toasts.map((toast) => (
-            <motion.div
-              key={toast.id}
-              initial={{ opacity: 0, x: 400, scale: 0.8 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 400, scale: 0.8 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className={`min-w-[260px] max-w-sm px-4 py-3 rounded-xl shadow-lg border text-sm font-medium ${
-                toast.type === 'error'
-                  ? 'bg-red-50 border-red-200 text-red-700'
-                  : toast.type === 'success'
-                    ? 'bg-primary-50 border-primary-200 text-primary-700'
-                    : 'bg-white border-primary-200 text-primary-700'
-              }`}
-            >
-              {toast.message}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
     </NotificationContext.Provider>
   )
 }
 
 export function useNotifications() {
   return useContext(NotificationContext)
+}
+
+/** Map backend notification types to in-app routes */
+export function resolveNotificationLink(notification) {
+  if (!notification) return null
+  if (notification.link || notification.path) {
+    return notification.link || notification.path
+  }
+  switch (notification.type) {
+    case 'BOOKING':
+    case 'PAYMENT':
+      return '/bookings'
+    case 'KYC':
+      return '/guest-verification'
+    default:
+      return '/notifications'
+  }
 }

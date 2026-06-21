@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Bell, CalendarCheck, CheckCircle, CreditCard, RefreshCw, Shield } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { notificationService } from '../services/notificationService'
 import { authService } from '../services/authService'
+import { resolveNotificationLink } from '../context/NotificationContext'
 
 const ROLE_STORAGE_KEY = 'userRole'
 
@@ -36,6 +38,7 @@ const formatRelativeTime = (value) => {
 }
 
 function NotificationBell({ user }) {
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(false)
@@ -134,6 +137,17 @@ function NotificationBell({ user }) {
     }
   }
 
+  const handleNotificationClick = async (item) => {
+    if (!item.isRead) {
+      await markAsRead(item.id)
+    }
+    const link = resolveNotificationLink(item)
+    if (link) {
+      setOpen(false)
+      navigate(link)
+    }
+  }
+
   const markAllAsRead = async () => {
     try {
       await notificationService.markAllAsRead()
@@ -172,7 +186,7 @@ function NotificationBell({ user }) {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-5 py-3 rounded-2xl bg-emerald-600 text-white shadow-xl text-sm font-semibold"
+            className="fixed top-4 left-1/2 z-[9999] flex w-[90%] max-w-lg -translate-x-1/2 flex-wrap items-center justify-center gap-2 px-4 py-3 text-center text-sm font-semibold sm:flex-nowrap sm:gap-3 sm:px-5 rounded-2xl bg-emerald-600 text-white shadow-xl"
           >
             <CheckCircle className="w-5 h-5 shrink-0" />
             <span>🎉 Your host application was approved! Reload to activate HOST features.</span>
@@ -215,7 +229,7 @@ function NotificationBell({ user }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.97 }}
             transition={{ duration: 0.16, ease: 'easeOut' }}
-            className="absolute right-0 top-full mt-2 w-96 rounded-2xl border border-primary-200/60 bg-white/80 backdrop-blur-2xl shadow-glass-lg overflow-hidden dark:border-slate-700 dark:bg-slate-800"
+            className="absolute right-0 top-full mt-2 w-[min(calc(100vw-2rem),24rem)] rounded-2xl border border-primary-200/60 bg-white/80 backdrop-blur-2xl shadow-glass-lg overflow-hidden dark:border-slate-700 dark:bg-slate-800"
           >
             <div className="px-4 py-3 border-b border-primary-200/60 flex items-center justify-between dark:border-slate-700">
               <div>
@@ -253,11 +267,11 @@ function NotificationBell({ user }) {
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => markAsRead(item.id)}
+                    onClick={() => handleNotificationClick(item)}
                     className={`w-full text-left px-4 py-3 border-b border-primary-100/70 transition-colors dark:border-slate-700 ${
                       item.isRead
                         ? 'hover:bg-primary-50/70 dark:hover:bg-slate-700/60'
-                        : 'bg-[#A65B32]/10 hover:bg-[#A65B32]/20 dark:bg-slate-700/40 dark:hover:bg-slate-700'
+                        : 'bg-[#A65B32]/10 hover:bg-[#A65B32]/20 dark:bg-slate-700/40 dark:hover:bg-slate-700 cursor-pointer'
                     }`}
                   >
                     <div className="flex items-start gap-3">

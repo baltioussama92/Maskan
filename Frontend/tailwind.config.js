@@ -85,6 +85,17 @@ export default {
       transitionDuration: {
         0: '0ms',
       },
+      fontSize: {
+        'body-sm': ['0.875rem', { lineHeight: '1.5' }],
+        'body': ['1rem', { lineHeight: '1.6' }],
+        'heading-sm': ['1.125rem', { lineHeight: '1.35' }],
+        'heading': ['1.5rem', { lineHeight: '1.25' }],
+        'display': ['2.25rem', { lineHeight: '1.1' }],
+      },
+      spacing: {
+        'page-x': '1rem',
+        'page-x-md': '2rem',
+      },
     },
   },
   plugins: [

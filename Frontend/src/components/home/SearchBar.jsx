@@ -256,8 +256,8 @@ export default function SearchBar({ onSearch, className = '' }) {
       ref={barRef}
       onSubmit={handleSubmit}
       className={`relative z-[110] flex flex-col md:flex-row items-stretch md:items-center
-          rounded-[2rem] md:rounded-full border border-primary-200/50 bg-primary-50/90 md:bg-primary-50/75 shadow-glass-lg backdrop-blur-xl p-2 md:p-1.5 w-full
-          transition-all duration-200 ease-out ${expanded ? 'max-w-5xl md:scale-105' : 'max-w-3xl'} ${className}`}
+          rounded-[2rem] md:rounded-full border border-primary-200/50 bg-primary-50/90 md:bg-primary-50/75 shadow-glass-lg backdrop-blur-xl p-2 md:p-1.5 w-full max-w-full
+          transition-all duration-200 ease-out ${expanded ? 'md:max-w-5xl md:scale-105' : 'max-w-3xl'} ${className}`}
     >
       {/* Location */}
       <div className="relative w-full md:flex-1">
@@ -292,10 +292,10 @@ export default function SearchBar({ onSearch, className = '' }) {
 
       <Divider />
 
-      {/* Dates Row (Side-by-side on mobile) */}
-      <div className="flex flex-row items-center w-full md:w-auto">
+      {/* Dates — stack on mobile, row on tablet+ */}
+      <div className="flex flex-col md:flex-row md:items-center w-full md:w-auto">
         {/* Check-in */}
-        <div className="relative flex-1 md:w-auto">
+        <div className="relative w-full md:w-auto md:flex-1">
           <SearchField
             label="Arrivée"
             icon={Calendar}
@@ -316,11 +316,11 @@ export default function SearchBar({ onSearch, className = '' }) {
           </AnimatePresence>
         </div>
 
-        {/* Vertical divider visible on both mobile and desktop inside the dates row */}
-        <div className="w-px h-8 bg-primary-200/70 shrink-0" />
+        {/* Vertical divider — desktop only */}
+        <div className="hidden md:block w-px h-8 bg-primary-200/70 shrink-0" />
 
         {/* Check-out */}
-        <div className="relative flex-1 md:w-auto">
+        <div className="relative w-full md:w-auto md:flex-1">
           <SearchField
             label="Départ"
             icon={Calendar}

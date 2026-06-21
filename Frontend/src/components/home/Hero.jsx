@@ -128,7 +128,7 @@ export default function Hero() {
         height={1080}
         decoding="async"
         fetchPriority="high"
-        className="pointer-events-none fixed top-0 left-0 -z-10 h-full min-h-[100svh] w-full object-cover object-center"
+        className="pointer-events-none fixed top-0 left-0 -z-10 h-full min-h-[100svh] w-full max-w-full object-cover object-[center_30%] sm:object-center"
         aria-hidden="true"
       />
 
@@ -146,7 +146,7 @@ export default function Hero() {
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/20 rounded-full blur-3xl pointer-events-none max-md:hidden" />
       <div className="absolute bottom-1/3 right-1/4 w-72 h-72 bg-primary-300/15 rounded-full blur-3xl pointer-events-none max-md:hidden" />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-28 pb-16 w-full">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-28 pb-12 sm:pb-16">
         <motion.div
           variants={reduceMotion ? undefined : containerVar}
           initial={reduceMotion ? false : 'hidden'}

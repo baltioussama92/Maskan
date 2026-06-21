@@ -8,9 +8,9 @@ import HomePage       from './pages/HomePage'
 import AuthModal      from './components/auth/AuthModal'
 import PropertyGrid   from './components/properties/PropertyGrid'
 import AdminLayout from './admin/components/AdminLayout'
-import InstallButton from './components/InstallButton'
 import { useNotifications } from './context/NotificationContext'
 import { useBackendConnectivityCheck } from './hooks/useBackendConnectivityCheck'
+import ToastStack from './components/ToastStack'
 
 const PropertyDetails = React.lazy(() => import('./pages/PropertyDetails'))
 const DashboardPage  = React.lazy(() => import('./pages/DashboardPage'))
@@ -421,10 +421,10 @@ export default function App() {
     <AppErrorBoundary>
       <>
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <div className="relative z-10">
+          <div className="relative z-10 w-full max-w-full overflow-x-hidden">
+            <ToastStack />
             <Watermark />
             <AppRoutes />
-            <InstallButton />
           </div>
         </BrowserRouter>
 

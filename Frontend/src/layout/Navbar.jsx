@@ -112,10 +112,10 @@ export default function Navbar({ user = null, onAuthClick, onLogout }) {
             : 'py-4 bg-primary-50/60 backdrop-blur-md dark:bg-slate-900/60'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 flex items-center justify-between gap-2 sm:gap-4 min-w-0">
 
           {/* -- Logo ------------------------------------------- */}
-          <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
+          <Link to="/" className="flex items-center gap-2 sm:gap-2.5 shrink-0 min-w-0 group">
             <motion.img
               animate={{ 
                 y: [0, -3, 0],
@@ -133,9 +133,9 @@ export default function Navbar({ user = null, onAuthClick, onLogout }) {
               }}
               src="/maskan no name logo.png"
               alt="Maskan logo"
-              className="h-10 w-auto shrink-0 drop-shadow-sm"
+              className="h-8 sm:h-10 w-auto shrink-0 drop-shadow-sm"
             />
-            <span className="font-poppins font-bold text-xl tracking-tight">
+            <span className="hidden sm:inline font-poppins font-bold text-lg sm:text-xl tracking-tight truncate">
               <span className="text-primary-600 dark:text-slate-300">Mas</span>
               <span className="text-primary-900 dark:text-slate-100">kan</span>
             </span>
@@ -168,7 +168,7 @@ export default function Navbar({ user = null, onAuthClick, onLogout }) {
           </nav>
 
           {/* -- Right side ------------------------------------- */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
 
             {/* Language picker */}
             <div ref={languageRef} className="relative">
@@ -180,7 +180,7 @@ export default function Navbar({ user = null, onAuthClick, onLogout }) {
                 aria-label={t('nav.chooseLanguage')}
               >
                 <Globe className="w-4 h-4" />
-                <span>{currentLanguage.shortLabel}</span>
+                <span className="hidden sm:inline">{currentLanguage.shortLabel}</span>
                 <motion.span animate={{ rotate: languageOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
                   <ChevronDown className="w-3.5 h-3.5" />
                 </motion.span>
