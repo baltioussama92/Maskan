@@ -128,7 +128,7 @@ export default function Hero() {
         height={1080}
         decoding="async"
         fetchPriority="high"
-        className="pointer-events-none fixed top-0 left-0 -z-10 h-[100svh] w-full object-cover object-center"
+        className="pointer-events-none fixed top-0 left-0 -z-10 h-full min-h-[100svh] w-full object-cover object-center"
         aria-hidden="true"
       />
 

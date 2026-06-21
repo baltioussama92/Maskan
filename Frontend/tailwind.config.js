@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+import plugin from 'tailwindcss/plugin'
+
 export default {
   darkMode: 'class',
   content: [
@@ -85,7 +87,26 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    plugin(({ addBase }) => {
+      addBase({
+        '@media (prefers-reduced-motion: reduce)': {
+          '.motion-safe-only': {
+            animation: 'none !important',
+            transition: 'none !important',
+            transform: 'none !important',
+          },
+        },
+        '@media (max-width: 767px)': {
+          '.motion-safe-only': {
+            animation: 'none !important',
+            transition: 'none !important',
+            transform: 'none !important',
+          },
+        },
+      })
+    }),
+  ],
   future: {
     hoverOnlyWhenSupported: true,
   },

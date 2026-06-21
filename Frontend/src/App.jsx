@@ -8,7 +8,7 @@ import HomePage       from './pages/HomePage'
 import AuthModal      from './components/auth/AuthModal'
 import PropertyGrid   from './components/properties/PropertyGrid'
 import AdminLayout from './admin/components/AdminLayout'
-import InstallAppButton from './components/pwa/InstallAppButton'
+import InstallButton from './components/InstallButton'
 import { useNotifications } from './context/NotificationContext'
 import { useBackendConnectivityCheck } from './hooks/useBackendConnectivityCheck'
 
@@ -424,7 +424,7 @@ export default function App() {
           <div className="relative z-10">
             <Watermark />
             <AppRoutes />
-            <InstallAppButton />
+            <InstallButton />
           </div>
         </BrowserRouter>
 
