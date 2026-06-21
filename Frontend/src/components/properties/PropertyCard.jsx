@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useTransition } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Heart, MapPin, Star, Bed, Bath, Maximize2 } from 'lucide-react'
+import { useAppMotion } from '../../hooks/useAppMotion'
 
 const BADGE_STYLES = {
   emerald: 'bg-emerald-500/90 text-primary-50',
@@ -51,6 +52,9 @@ function PropertyCard({
   const [liked, setLiked] = useState(false)
   const [imageHasError, setImageHasError] = useState(false)
   const navigate = useNavigate()
+  const { reduceMotion } = useAppMotion()
+  const CardWrapper = reduceMotion ? 'div' : motion.div
+  const cardMotionProps = reduceMotion ? {} : { whileHover: { y: -6 } }
 
   // Support both object-style and individual props
   const p = property ?? { id, title, location, price, rating, image, type }
@@ -62,22 +66,24 @@ function PropertyCard({
   }
 
   return (
-    <motion.div
-      whileHover={{ y: -6 }}
+    <CardWrapper
+      {...cardMotionProps}
       onClick={handleClick}
       className="group bg-primary-100 rounded-2xl border border-primary-200 overflow-hidden
-                 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer"
+                 shadow-sm hover:shadow-lg transition-shadow duration-300 cursor-pointer contain-layout"
     >
-      {/* Image */}
-      <div className="relative aspect-[4/3] overflow-hidden">
+      {/* Image — aspect-ratio reserves space before load (prevents CLS) */}
+      <div className="relative aspect-[4/3] overflow-hidden bg-primary-200">
         <img
           src={imageSrc}
           alt={p.title}
+          width={640}
+          height={480}
           loading="lazy"
           decoding="async"
           onError={() => setImageHasError(true)}
-          className="w-full h-full object-cover transition-transform duration-500
-                     group-hover:scale-105"
+          className="w-full h-full object-cover motion-safe:transition-transform motion-safe:duration-500
+                     md:group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-primary-900/50 to-transparent" />
 
@@ -164,7 +170,7 @@ function PropertyCard({
           )}
         </div>
       </div>
-    </motion.div>
+    </CardWrapper>
   )
 }
 

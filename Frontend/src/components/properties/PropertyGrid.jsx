@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useTransition } from 'react'
 import { motion } from 'framer-motion'
 import { SlidersHorizontal, Grid3X3, List, TrendingUp, Loader2 } from 'lucide-react'
 import PropertyCard from './PropertyCard'
 import ScrollReveal from '../ui/ScrollReveal'
 import { propertyService } from '../../services/propertyService'
 import { wishlistService } from '../../services/wishlistService'
+import { useAppMotion } from '../../hooks/useAppMotion'
 
 // -- Sort Options ---------------------------------------------
 const SORT_OPTIONS = [
@@ -60,6 +61,8 @@ export default function PropertyGrid({ title = 'Propriétés en vedette', search
   const [sort,    setSort]    = useState('default')
   const [type,    setType]    = useState('Tous')
   const [layout,  setLayout]  = useState('grid') // 'grid' | 'list'
+  const [isFilterPending, startFilterTransition] = useTransition()
+  const { reduceMotion } = useAppMotion()
   const [apiData, setApiData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [favoriteIds, setFavoriteIds] = useState(() => new Set())
@@ -206,8 +209,9 @@ export default function PropertyGrid({ title = 'Propriétés en vedette', search
           <div className="relative">
             <select
               value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              className="appearance-none rounded-xl border border-primary-200 bg-primary-100 px-4 py-2 text-xs text-primary-800 shadow-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-200 pr-8 cursor-pointer"
+              onChange={(e) => startFilterTransition(() => setSort(e.target.value))}
+              aria-busy={isFilterPending}
+              className="appearance-none rounded-xl border border-primary-200 bg-primary-100 px-4 py-2 text-xs text-primary-800 shadow-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-200 pr-8 cursor-pointer min-h-[2.5rem]"
             >
               {SORT_OPTIONS.map(({ value, label }) => (
                 <option key={value} value={value}>{label}</option>
@@ -220,16 +224,16 @@ export default function PropertyGrid({ title = 'Propriétés en vedette', search
           {/* Layout toggle */}
           <div className="flex items-center border border-primary-200 rounded-xl overflow-hidden">
             <button
-              onClick={() => setLayout('grid')}
-              className={`p-2 transition-colors duration-150 ${
+              onClick={() => startFilterTransition(() => setLayout('grid'))}
+              className={`btn-stable p-2 transition-colors duration-150 ${
                 layout === 'grid' ? 'bg-primary-50 text-primary-600' : 'text-primary-400 hover:bg-primary-50'
               }`}
             >
               <Grid3X3 className="w-4 h-4" />
             </button>
             <button
-              onClick={() => setLayout('list')}
-              className={`p-2 transition-colors duration-150 ${
+              onClick={() => startFilterTransition(() => setLayout('list'))}
+              className={`btn-stable p-2 transition-colors duration-150 ${
                 layout === 'list' ? 'bg-primary-50 text-primary-600' : 'text-primary-400 hover:bg-primary-50'
               }`}
             >
@@ -244,10 +248,10 @@ export default function PropertyGrid({ title = 'Propriétés en vedette', search
         {propertyTypes.map((t) => (
           <motion.button
             key={t}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            onClick={() => setType(t)}
-            className={`relative px-4 py-1.5 rounded-full text-sm font-medium transition-colors duration-150 ${
+            whileHover={reduceMotion ? undefined : { scale: 1.04 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+            onClick={() => startFilterTransition(() => setType(t))}
+            className={`btn-stable relative h-9 min-w-[3rem] px-4 py-1.5 rounded-full text-sm font-medium transition-colors duration-150 ${
               type === t
                 ? 'text-primary-50'
                 : 'bg-primary-100 text-primary-600 border border-primary-200 hover:border-primary-300 hover:text-primary-600'
