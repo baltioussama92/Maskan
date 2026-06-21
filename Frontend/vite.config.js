@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['maskan no name logo.png', 'Maskan logo.svg', 'home-hero.webp'],
+      includeAssets: ['maskan no name logo.png', 'Maskan logo.svg'],
       manifest: {
         name: 'Maskan — Location immobilière',
         short_name: 'Maskan',
@@ -40,6 +40,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
+        globIgnores: ['**/villa home page.png'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/maskan-xzpw\.onrender\.com\/api\/(listings|properties\/search|health).*/i,

@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+﻿import React, { useEffect, useState, useTransition } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Star, Shield, TrendingUp, ChevronDown } from 'lucide-react'
@@ -7,73 +7,7 @@ import ScrollReveal from '../ui/ScrollReveal'
 import { propertyService } from '../../services/propertyService'
 import { useAppMotion } from '../../hooks/useAppMotion'
 
-const HERO_POSTER = '/home-hero.jpg'
-const HERO_VIDEO = '/villa home page.mp4'
-
-/** Frozen by default — decodes nothing until hover (desktop) or tap (mobile). */
-function FrozenHeroVideo({ reduceMotion }) {
-  const videoRef = useRef(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-
-  const playVideo = useCallback(async () => {
-    if (reduceMotion) return
-    const video = videoRef.current
-    if (!video) return
-    try {
-      if (video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) {
-        video.load()
-      }
-      await video.play()
-      setIsPlaying(true)
-    } catch {
-      // Autoplay blocked or missing file — poster remains visible
-    }
-  }, [reduceMotion])
-
-  const freezeVideo = useCallback(() => {
-    const video = videoRef.current
-    if (!video) return
-    video.pause()
-    video.currentTime = 0
-    setIsPlaying(false)
-  }, [])
-
-  useEffect(() => {
-    if (reduceMotion) freezeVideo()
-  }, [reduceMotion, freezeVideo])
-
-  return (
-    <div
-      className="absolute inset-0 -z-10"
-      onMouseEnter={playVideo}
-      onMouseLeave={freezeVideo}
-      onClick={() => (isPlaying ? freezeVideo() : playVideo())}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          if (isPlaying) freezeVideo()
-          else playVideo()
-        }
-      }}
-      role="button"
-      tabIndex={reduceMotion ? -1 : 0}
-      aria-label={isPlaying ? 'Pause hero video' : 'Play hero video'}
-    >
-      <video
-        ref={videoRef}
-        className="h-full w-full object-cover object-center"
-        muted
-        loop
-        playsInline
-        preload="none"
-        poster={HERO_POSTER}
-        aria-hidden="true"
-      >
-        <source src={HERO_VIDEO} type="video/mp4" />
-      </video>
-    </div>
-  )
-}
+const HERO_BG_IMAGE = '/villa home page.png'
 
 function FloatingBadge({ className, icon: Icon, label, sub, reduceMotion }) {
   const Wrapper = reduceMotion ? 'div' : motion.div
@@ -186,7 +120,17 @@ export default function Hero() {
   return (
     <section className="relative min-h-[100svh] flex flex-col justify-center overflow-hidden contain-layout">
 
-      <FrozenHeroVideo reduceMotion={reduceMotion} />
+      {/* Static hero background — zero CPU vs video decode */}
+      <img
+        src={HERO_BG_IMAGE}
+        alt=""
+        width={1920}
+        height={1080}
+        decoding="async"
+        fetchPriority="high"
+        className="pointer-events-none fixed top-0 left-0 -z-10 h-[100svh] w-full object-cover object-center"
+        aria-hidden="true"
+      />
 
       <div className="absolute inset-0 bg-gradient-to-b from-primary-900/70 via-primary-900/50 to-primary-900/80 pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-r from-primary-900/50 to-transparent pointer-events-none" />
